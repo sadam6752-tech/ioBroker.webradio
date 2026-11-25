@@ -122,6 +122,8 @@
         "cacheLogos": true,
         "trackCovers": true,
         "checkStations": true,
+        "alarmVolume": 40,
+        "alarmFade": 5,
         "catalogServer": "",
         "ffmpegPath": ""
     },

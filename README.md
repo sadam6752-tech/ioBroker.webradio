@@ -62,7 +62,8 @@ to it.
 **Settings** — port (8096) and address of the stream server, the address the players reach this host on (empty: the
 first network address), reading titles of directly played stations, keeping logos, the cover of the playing song (see
 _Privacy_), the daily check of the favourites, a fixed radio-browser.info server and the path of an own ffmpeg (empty:
-the one that comes with the adapter).
+the one that comes with the adapter), and for the **wake-up radio** the volume it ends at (40 %) and the minutes in
+which the volume rises from 0 (5; 0 = at once), the same for every player.
 
 The **daily check** opens every favourite once a day (the first time two minutes after the start; the button
 `info.checkStations` and the message `check_stations` run it at once) and writes `stations.<station>.online`. A station
@@ -80,28 +81,28 @@ millisecond: each one buffers on its own.
 
 ## States
 
-| State                                                                      | Meaning                                                                                   |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `webradio.0.targets.<player>.station`                                      | id of a favourite station; writing it plays the station                                   |
-| `webradio.0.targets.<player>.play` / `.stop`                               | buttons (play without a selected station: like resume)                                    |
-| `webradio.0.targets.<player>.resume`                                       | button: the station that played last, else the first favourite                            |
-| `webradio.0.targets.<player>.next` / `.prev`                               | buttons: next / previous favourite, wrapping around (also while stopped)                  |
-| `webradio.0.targets.<player>.sleep`                                        | sleep timer in minutes, 0 = off; the volume fades out in the last 30 s                    |
-| `webradio.0.targets.<player>.sleepLeft`                                    | minutes left of the sleep timer                                                           |
-| `webradio.0.targets.<player>.lastStation`                                  | the station that played last (JSON), for resume                                           |
-| `webradio.0.targets.<player>.history`                                      | the last 50 titles (JSON, newest first)                                                   |
-| `webradio.0.targets.<player>.alarmTime` / `.alarmDays`                     | wake-up radio: time `HH:MM` (empty = off), weekdays `1-5`, `mo,we,fr` (empty = every day) |
-| `webradio.0.targets.<player>.alarmStation` / `.alarmVolume` / `.alarmFade` | its station (empty = the last one), end volume and fade-in in minutes                     |
-| `webradio.0.targets.<player>.alarmNext`                                    | the next wake-up (ISO time)                                                               |
-| `webradio.0.targets.<player>.playing`                                      | a station of this adapter plays on the player                                             |
-| `webradio.0.targets.<player>.title`                                        | now playing, as sent by the station                                                       |
-| `webradio.0.targets.<player>.cover`                                        | cover of the playing song (when found), else the logo of the station                      |
-| `webradio.0.targets.<player>.volume`                                       | volume of the player, 0–100 %                                                             |
-| `webradio.0.targets.<player>.streamUrl`                                    | the URL written to the player                                                             |
-| `webradio.0.stations.<station>.name` / `.url` / `.logo` / `.tags`          | the favourites                                                                            |
-| `webradio.0.stations.<station>.online` / `.checked`                        | the station answered at the last check / when it was checked                              |
-| `webradio.0.info.checkStations`                                            | button: check the favourites now                                                          |
-| `webradio.0.info.stations` / `webradio.0.info.targets`                     | the favourites and the players as JSON (vis widget)                                       |
+| State                                                             | Meaning                                                                                   |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `webradio.0.targets.<player>.station`                             | id of a favourite station; writing it plays the station                                   |
+| `webradio.0.targets.<player>.play` / `.stop`                      | buttons (play without a selected station: like resume)                                    |
+| `webradio.0.targets.<player>.resume`                              | button: the station that played last, else the first favourite                            |
+| `webradio.0.targets.<player>.next` / `.prev`                      | buttons: next / previous favourite, wrapping around (also while stopped)                  |
+| `webradio.0.targets.<player>.sleep`                               | sleep timer in minutes, 0 = off; the volume fades out in the last 30 s                    |
+| `webradio.0.targets.<player>.sleepLeft`                           | minutes left of the sleep timer                                                           |
+| `webradio.0.targets.<player>.lastStation`                         | the station that played last (JSON), for resume                                           |
+| `webradio.0.targets.<player>.history`                             | the last 50 titles (JSON, newest first)                                                   |
+| `webradio.0.targets.<player>.alarmTime` / `.alarmDays`            | wake-up radio: time `HH:MM` (empty = off), weekdays `1-5`, `mo,we,fr` (empty = every day) |
+| `webradio.0.targets.<player>.alarmStation`                        | its station (empty = the last one)                                                        |
+| `webradio.0.targets.<player>.alarmNext`                           | the next wake-up (ISO time)                                                               |
+| `webradio.0.targets.<player>.playing`                             | a station of this adapter plays on the player                                             |
+| `webradio.0.targets.<player>.title`                               | now playing, as sent by the station                                                       |
+| `webradio.0.targets.<player>.cover`                               | cover of the playing song (when found), else the logo of the station                      |
+| `webradio.0.targets.<player>.volume`                              | volume of the player, 0–100 %                                                             |
+| `webradio.0.targets.<player>.streamUrl`                           | the URL written to the player                                                             |
+| `webradio.0.stations.<station>.name` / `.url` / `.logo` / `.tags` | the favourites                                                                            |
+| `webradio.0.stations.<station>.online` / `.checked`               | the station answered at the last check / when it was checked                              |
+| `webradio.0.info.checkStations`                                   | button: check the favourites now                                                          |
+| `webradio.0.info.stations` / `webradio.0.info.targets`            | the favourites and the players as JSON (vis widget)                                       |
 
 ## vis widget "Radio"
 
@@ -129,22 +130,22 @@ vis 2 can show vis 1 widgets as well; this set was made and tried for vis 1.
 
 `sendTo('webradio.0', '<command>', {...})` — the command `help` describes all of them:
 
-| Command           | Message                                                    | Answer                                                                                   |
-| ----------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `list_stations`   | `{}`                                                       | `{stations: [{id, name, tags, url, logo}]}`                                              |
-| `search_stations` | `{query?, country?, tag?, limit?}`                         | `{query, stations: [{uuid, name, url, country, tags, codec, bitrate}], hint?}`           |
-| `list_targets`    | `{}`                                                       | `{targets: [{id, name, rooms, kind, playing, station, title}]}`                          |
-| `play`            | `{station, target?, room?, targets?, all?}`                | `{ok, target, station, stationId, source, uuid?}`; several players: `targets`, `errors?` |
-| `resume`          | `{target?, room?}`                                         | like `play`; `already: true` when it plays                                               |
-| `next` / `prev`   | `{target?, room?}`                                         | like `play`                                                                              |
-| `sleep`           | `{minutes, target?, room?}`                                | `{ok, target, minutes, endsAt}`; `minutes: 0` = off                                      |
-| `stop`            | `{target?, room?}`                                         | `{ok, stopped}`                                                                          |
-| `now_playing`     | `{target?, room?}`                                         | `{targets: [...]}`                                                                       |
-| `history`         | `{target?, room?, limit?}`                                 | `{targets: [{id, name, history: [{time, station, title}]}]}`                             |
-| `alarm`           | `{target?, room?, time?, days?, station?, volume?, fade?}` | `{ok, target, alarm: {time, days, station, volume, fade, next}}`                         |
-| `check_stations`  | `{}`                                                       | `{stations: [{id, name, online, url, refreshed?, error?}]}`                              |
-| `export_stations` | `{format?}`                                                | `{format, text}` (M3U or JSON)                                                           |
-| `import_stations` | `{text}`                                                   | `{ok, format, added, skipped, restart}`; adding changes the settings and restarts        |
+| Command           | Message                                     | Answer                                                                                   |
+| ----------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `list_stations`   | `{}`                                        | `{stations: [{id, name, tags, url, logo}]}`                                              |
+| `search_stations` | `{query?, country?, tag?, limit?}`          | `{query, stations: [{uuid, name, url, country, tags, codec, bitrate}], hint?}`           |
+| `list_targets`    | `{}`                                        | `{targets: [{id, name, rooms, kind, playing, station, title}]}`                          |
+| `play`            | `{station, target?, room?, targets?, all?}` | `{ok, target, station, stationId, source, uuid?}`; several players: `targets`, `errors?` |
+| `resume`          | `{target?, room?}`                          | like `play`; `already: true` when it plays                                               |
+| `next` / `prev`   | `{target?, room?}`                          | like `play`                                                                              |
+| `sleep`           | `{minutes, target?, room?}`                 | `{ok, target, minutes, endsAt}`; `minutes: 0` = off                                      |
+| `stop`            | `{target?, room?}`                          | `{ok, stopped}`                                                                          |
+| `now_playing`     | `{target?, room?}`                          | `{targets: [...]}`                                                                       |
+| `history`         | `{target?, room?, limit?}`                  | `{targets: [{id, name, history: [{time, station, title}]}]}`                             |
+| `alarm`           | `{target?, room?, time?, days?, station?}`  | `{ok, target, alarm: {time, days, station, volume, fade, next}}`                         |
+| `check_stations`  | `{}`                                        | `{stations: [{id, name, online, url, refreshed?, error?}]}`                              |
+| `export_stations` | `{format?}`                                 | `{format, text}` (M3U or JSON)                                                           |
+| `import_stations` | `{text}`                                    | `{ok, format, added, skipped, restart}`; adding changes the settings and restarts        |
 
 `station` is a stream URL, a favourite (id, name or part of the name; a favourite wins over a catalog station of the
 same name), a radio-browser.info uuid, or any other name — then the most played match in radio-browser.info is taken.

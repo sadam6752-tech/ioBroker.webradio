@@ -45,5 +45,10 @@
     "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Mostrar la portada de la canción en reproducción (buscada en la iTunes Search API: artista y título van a Apple)",
     "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Comprobar las emisoras favoritas una vez al día; una emisora de radio-browser.info que no responde recibe de allí su nueva URL",
     "Devices": "Dispositivos",
-    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Los reproductores de esta instancia: radio encendida o apagada, emisora, volumen, lo que suena, temporizador, emisora anterior y siguiente; los detalles muestran el stream, el próximo despertar y los últimos títulos. Añada o cambie reproductores en la pestaña Reproductores. La instancia debe estar en marcha."
+    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Los reproductores de esta instancia: radio encendida o apagada, emisora, volumen, lo que suena, temporizador, emisora anterior y siguiente; los detalles muestran el stream, el próximo despertar y los últimos títulos. Añada o cambie reproductores en la pestaña Reproductores. La instancia debe estar en marcha.",
+    "Wake-up radio": "Radio despertador",
+    "Wake-up volume (%)": "Volumen del despertador (%)",
+    "Volume rise (minutes)": "Subida del volumen (minutos)",
+    "Minutes in which the volume rises from 0 to the wake-up volume; 0 = at once": "Minutos en los que el volumen sube de 0 al volumen del despertador; 0 = de inmediato",
+    "For every player with an alarm (targets.<player>.alarmTime)": "Para cada reproductor con despertador (targets.<player>.alarmTime)"
 }

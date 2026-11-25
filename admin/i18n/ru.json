@@ -45,5 +45,10 @@
     "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Показывать обложку играющей песни (поиск в iTunes Search API: исполнитель и название уходят в Apple)",
     "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Проверять избранные станции раз в день; станция из radio-browser.info, которая не отвечает, получает оттуда свой новый URL",
     "Devices": "Устройства",
-    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Плееры этого экземпляра: радио вкл. или выкл., станция, громкость, что играет, таймер сна, предыдущая и следующая станция; в подробностях — поток, следующий будильник и последние треки. Плееры добавляются и меняются на вкладке «Плееры». Экземпляр должен работать."
+    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Плееры этого экземпляра: радио вкл. или выкл., станция, громкость, что играет, таймер сна, предыдущая и следующая станция; в подробностях — поток, следующий будильник и последние треки. Плееры добавляются и меняются на вкладке «Плееры». Экземпляр должен работать.",
+    "Wake-up radio": "Радиобудильник",
+    "Wake-up volume (%)": "Громкость будильника (%)",
+    "Volume rise (minutes)": "Нарастание громкости (минуты)",
+    "Minutes in which the volume rises from 0 to the wake-up volume; 0 = at once": "Минуты, за которые громкость поднимается от 0 до громкости будильника; 0 = сразу",
+    "For every player with an alarm (targets.<player>.alarmTime)": "Для каждого плеера с будильником (targets.<player>.alarmTime)"
 }

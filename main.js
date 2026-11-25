@@ -474,8 +474,6 @@ class Webradio extends utils.Adapter {
             ['alarmTime', 'string', 'text', true, '', {}],
             ['alarmDays', 'string', 'text', true, '', {}],
             ['alarmStation', 'string', 'text', true, '', { states: choice }],
-            ['alarmVolume', 'number', 'level.volume', true, 30, { min: 0, max: 100, unit: '%' }],
-            ['alarmFade', 'number', 'level', true, 5, { min: 0, max: 60, unit: 'min' }],
             ['alarmNext', 'string', 'date', false, '', {}],
         ];
         for (const t of targets) {
@@ -520,6 +518,14 @@ class Webradio extends utils.Adapter {
         }
         await this.removeStale('stations', new Set(stations.map(s => `${this.namespace}.stations.${s.id}`)));
         await this.removeStale('targets', new Set(targets.map(t => `${this.namespace}.targets.${t.id}`)));
+        // 0.0.3-beta: volume and fade-in of the wake-up radio were per player; they are settings of the instance now
+        for (const t of targets) {
+            for (const key of ['alarmVolume', 'alarmFade']) {
+                if (await this.getObjectAsync(`targets.${t.id}.${key}`)) {
+                    await this.delObjectAsync(`targets.${t.id}.${key}`);
+                }
+            }
+        }
     }
 
     /**
@@ -975,7 +981,7 @@ class Webradio extends utils.Adapter {
      * Writes one alarm setting of a player (normalized, ack) and plans the alarm again.
      *
      * @param {Running} r - Target
-     * @param {string} key - alarmTime, alarmDays, alarmStation, alarmVolume or alarmFade
+     * @param {string} key - alarmTime, alarmDays or alarmStation
      * @param {unknown} value - Value
      * @returns {Promise<string>} Error text, empty = done
      */
@@ -1002,14 +1008,25 @@ class Webradio extends utils.Adapter {
                 return `no single favourite station matches "${val}"`;
             }
             val = hits[0]?.id || '';
-        } else if (key === 'alarmVolume') {
-            val = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
         } else {
-            val = Math.max(0, Math.min(60, Number(value) || 0));
+            return `${key} is no alarm setting`;
         }
         await this.setState(id, { val, ack: true });
         await this.scheduleAlarm(r);
         return '';
+    }
+
+    /**
+     * @returns {{volume: number, fade: number}} End volume (%) and fade-in (minutes) of the wake-up radio, from the
+     *   settings
+     */
+    alarmLevels() {
+        const num = (v, d) =>
+            v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? d : Number(v);
+        return {
+            volume: Math.max(0, Math.min(100, Math.round(num(this.config.alarmVolume, 40)))),
+            fade: Math.max(0, Math.min(60, num(this.config.alarmFade, 5))),
+        };
     }
 
     /**
@@ -1052,8 +1069,7 @@ class Webradio extends utils.Adapter {
             this.log.warn(`${r.t.name}: wake-up radio without a station: add favourites in the settings`);
             return;
         }
-        const volume = Number((await this.getStateAsync(`${base}.alarmVolume`))?.val ?? 30);
-        const fade = Number((await this.getStateAsync(`${base}.alarmFade`))?.val ?? 5);
+        const { volume, fade } = this.alarmLevels();
         this.log.info(`${r.t.name}: wake-up radio, ${station.name}`);
         const ramp = r.t.volumeState && fade > 0;
         if (r.t.volumeState) {
@@ -1334,7 +1350,7 @@ class Webradio extends utils.Adapter {
             }
         } else if (key === 'stop' && state.val) {
             await this.stopTarget(r);
-        } else if (key.startsWith('alarm') && key !== 'alarmNext') {
+        } else if (key === 'alarmTime' || key === 'alarmDays' || key === 'alarmStation') {
             const error = await this.setAlarmState(r, key, state.val);
             if (error) {
                 this.log.warn(`${r.t.name}: ${error}`);
@@ -1579,8 +1595,6 @@ class Webradio extends utils.Adapter {
                     ['time', 'alarmTime'],
                     ['days', 'alarmDays'],
                     ['station', 'alarmStation'],
-                    ['volume', 'alarmVolume'],
-                    ['fade', 'alarmFade'],
                 ]) {
                     if (msg[field] !== undefined) {
                         const error = await this.setAlarmState(r, key, msg[field]);
@@ -1599,8 +1613,7 @@ class Webradio extends utils.Adapter {
                         time: (await read('alarmTime')) || '',
                         days: (await read('alarmDays')) || '',
                         station: (await read('alarmStation')) || '',
-                        volume: await read('alarmVolume'),
-                        fade: await read('alarmFade'),
+                        ...this.alarmLevels(),
                         next: (await read('alarmNext')) || '',
                     },
                 });

@@ -45,5 +45,10 @@
     "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Pokaż okładkę odtwarzanego utworu (szukana w iTunes Search API: wykonawca i tytuł trafiają do Apple)",
     "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Sprawdzaj ulubione stacje raz dziennie; stacja z radio-browser.info, która nie odpowiada, dostaje stamtąd swój nowy URL",
     "Devices": "Urządzenia",
-    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Odtwarzacze tej instancji: radio wł. lub wył., stacja, głośność, co gra, wyłącznik czasowy, poprzednia i następna stacja; szczegóły pokazują strumień, następne budzenie i ostatnie utwory. Odtwarzacze dodaje się i zmienia w zakładce Odtwarzacze. Instancja musi działać."
+    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Odtwarzacze tej instancji: radio wł. lub wył., stacja, głośność, co gra, wyłącznik czasowy, poprzednia i następna stacja; szczegóły pokazują strumień, następne budzenie i ostatnie utwory. Odtwarzacze dodaje się i zmienia w zakładce Odtwarzacze. Instancja musi działać.",
+    "Wake-up radio": "Radiobudzik",
+    "Wake-up volume (%)": "Głośność budzenia (%)",
+    "Volume rise (minutes)": "Narastanie głośności (minuty)",
+    "Minutes in which the volume rises from 0 to the wake-up volume; 0 = at once": "Minuty, w których głośność rośnie od 0 do głośności budzenia; 0 = od razu",
+    "For every player with an alarm (targets.<player>.alarmTime)": "Dla każdego odtwarzacza z budzikiem (targets.<player>.alarmTime)"
 }

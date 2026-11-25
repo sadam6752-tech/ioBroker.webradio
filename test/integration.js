@@ -136,6 +136,8 @@ tests.integration(path.join(__dirname, '..'), {
                         cacheLogos: true,
                         // no lookups at Apple from the tests
                         trackCovers: false,
+                        alarmVolume: 60,
+                        alarmFade: 0.5,
                     },
                 });
                 // the logo folder of version 0.0.1: an own mount point with a cached file
@@ -452,12 +454,10 @@ tests.integration(path.join(__dirname, '..'), {
                     time,
                     days: '',
                     station: 'Playlist Radio',
-                    volume: 60,
-                    fade: 0.5,
                 });
                 assert.equal(res.alarm.time, time);
                 assert.equal(res.alarm.station, 'playlist_radio');
-                assert.equal(res.alarm.volume, 60);
+                assert.deepEqual([res.alarm.volume, res.alarm.fade], [60, 0.5], 'from the settings');
                 const next = Date.parse(res.alarm.next);
                 assert.ok(next > Date.now() && next < Date.now() + 70_000, res.alarm.next);
                 assert.equal(await state('webradio.0.targets.kitchen.alarmNext'), res.alarm.next);

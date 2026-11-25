@@ -45,5 +45,10 @@
     "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Mostrar a capa da música em reprodução (pesquisada na iTunes Search API: artista e título vão para a Apple)",
     "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Verificar as estações favoritas uma vez por dia; uma estação do radio-browser.info que não responde recebe de lá o seu novo URL",
     "Devices": "Dispositivos",
-    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Os leitores desta instância: rádio ligado ou desligado, estação, volume, o que está a tocar, temporizador, estação anterior e seguinte; os detalhes mostram o stream, o próximo despertar e os últimos títulos. Adicione ou altere leitores no separador Leitores. A instância tem de estar a correr."
+    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Os leitores desta instância: rádio ligado ou desligado, estação, volume, o que está a tocar, temporizador, estação anterior e seguinte; os detalhes mostram o stream, o próximo despertar e os últimos títulos. Adicione ou altere leitores no separador Leitores. A instância tem de estar a correr.",
+    "Wake-up radio": "Rádio despertador",
+    "Wake-up volume (%)": "Volume do despertar (%)",
+    "Volume rise (minutes)": "Aumento do volume (minutos)",
+    "Minutes in which the volume rises from 0 to the wake-up volume; 0 = at once": "Minutos em que o volume sobe de 0 até ao volume do despertar; 0 = de imediato",
+    "For every player with an alarm (targets.<player>.alarmTime)": "Para cada leitor com despertador (targets.<player>.alarmTime)"
 }

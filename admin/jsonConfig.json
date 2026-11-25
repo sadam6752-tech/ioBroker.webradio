@@ -419,6 +419,44 @@
                     "lg": 12,
                     "xl": 12
                 },
+                "_alarmHeader": {
+                    "type": "header",
+                    "text": "Wake-up radio",
+                    "size": 5,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "alarmVolume": {
+                    "type": "number",
+                    "label": "Wake-up volume (%)",
+                    "help": "For every player with an alarm (targets.<player>.alarmTime)",
+                    "min": 0,
+                    "max": 100,
+                    "step": 1,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "alarmFade": {
+                    "type": "number",
+                    "label": "Volume rise (minutes)",
+                    "help": "Minutes in which the volume rises from 0 to the wake-up volume; 0 = at once",
+                    "min": 0,
+                    "max": 60,
+                    "step": 1,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
                 "catalogServer": {
                     "type": "text",
                     "label": "Server of radio-browser.info",

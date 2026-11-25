@@ -45,5 +45,10 @@
     "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Cover des laufenden Titels anzeigen (in der iTunes Search API gesucht: Interpret und Titel gehen an Apple)",
     "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Die Lieblingssender einmal am Tag prüfen; ein Sender aus radio-browser.info, der nicht antwortet, bekommt von dort seine neue URL",
     "Devices": "Geräte",
-    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Die Abspielgeräte dieser Instanz: Radio an oder aus, Sender, Lautstärke, was gerade läuft, Schlaftimer, vorheriger und nächster Sender; die Details zeigen den Stream, das nächste Wecken und die letzten Titel. Abspielgeräte im Reiter Abspielgeräte hinzufügen oder ändern. Die Instanz muss laufen."
+    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "Die Abspielgeräte dieser Instanz: Radio an oder aus, Sender, Lautstärke, was gerade läuft, Schlaftimer, vorheriger und nächster Sender; die Details zeigen den Stream, das nächste Wecken und die letzten Titel. Abspielgeräte im Reiter Abspielgeräte hinzufügen oder ändern. Die Instanz muss laufen.",
+    "Wake-up radio": "Radiowecker",
+    "Wake-up volume (%)": "Wecklautstärke (%)",
+    "Volume rise (minutes)": "Lautstärke-Anstieg (Minuten)",
+    "Minutes in which the volume rises from 0 to the wake-up volume; 0 = at once": "Minuten, in denen die Lautstärke von 0 auf die Wecklautstärke steigt; 0 = sofort",
+    "For every player with an alarm (targets.<player>.alarmTime)": "Für jedes Abspielgerät mit Wecker (targets.<player>.alarmTime)"
 }
