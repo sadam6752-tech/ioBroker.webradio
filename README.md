@@ -113,7 +113,8 @@ on the chosen player; above them the player choice, the buttons previous / last 
 opens a panel with time, weekdays and station), the volume and what plays now (logo, station, title
 sent by the station).
 
-vis copies the widget when it starts; the installation of this adapter restarts vis. In the vis editor the widget is
+vis keeps its own copy of the widget files. After installing or updating this adapter, run `iobroker upload vis`,
+restart vis and reload the page (Ctrl+F5) — otherwise vis may go on showing an older widget. In the vis editor the widget is
 in the widget set **webradio**, named **Radio**. Its attributes:
 
 - **Adapter instance** — `webradio.0` unless you run more than one instance
