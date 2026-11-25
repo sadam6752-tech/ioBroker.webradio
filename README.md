@@ -72,7 +72,8 @@ kept in the station's object and used until the URL in the settings changes — 
 
 **Device Manager** — the tab _Devices_ of the settings (and the tab _Devices_ of the admin, which may have to be switched on with _Filter menu_) shows a card per player: radio on/off (resume / stop), the station,
 the volume, now playing, the sleep timer, previous and next; below it the stream, the next wake-up and the last titles.
-The instance action checks the favourites.
+The button _Wake-up radio_ of a card opens a form with the time, the weekdays and the station. The instance action
+checks the favourites.
 
 **Multiroom** — the message `play` with `targets: ["kitchen", "bath"]` (or a `room` and `all: true`) plays a station on
 several players at once. Players of the same format (all ESPHome satellites: FLAC 48 kHz mono) share one connection
@@ -108,7 +109,8 @@ millisecond: each one buffers on its own.
 
 The adapter brings a widget for vis (version 1): the logos of the favourite stations as tiles, a tap plays the station
 on the chosen player; above them the player choice, the buttons previous / last station / next / stop, a sleep button
-(each tap: 15, 30, 60, 90 minutes, off; it shows the minutes left), the volume and what plays now (logo, station, title
+(each tap: 15, 30, 60, 90 minutes, off; it shows the minutes left), an alarm button (it shows the wake-up time and
+opens a panel with time, weekdays and station), the volume and what plays now (logo, station, title
 sent by the station).
 
 vis copies the widget when it starts; the installation of this adapter restarts vis. In the vis editor the widget is
@@ -121,7 +123,8 @@ in the widget set **webradio**, named **Radio**. Its attributes:
 - **Colours** — theme dark, light or auto (follows the device), and own colours for background, text, accent and tiles
 
 The widget reads `info.stations`, `info.targets` and `targets.<player>.station`, `playing`, `title`, `volume`, `sleep`,
-`sleepLeft`, and writes `station`, `stop`, `resume`, `next`, `prev`, `sleep` and `volume` — nothing else. The logos come from the file storage through the web adapter
+`sleepLeft`, `alarmTime`, `alarmDays`, `alarmStation`, `alarmNext`, and writes `station`, `stop`, `resume`, `next`, `prev`,
+`sleep`, `volume`, `alarmTime`, `alarmDays` and `alarmStation` — nothing else. The logos come from the file storage through the web adapter
 (`/webradio.0.storage/logos/…`, the same address and protocol as vis), else from the stream server.
 
 vis 2 can show vis 1 widgets as well; this set was made and tried for vis 1.
@@ -170,6 +173,10 @@ Nothing else is sent.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- Set the wake-up radio without scripts: a form in the Device Manager card and an alarm panel in the vis widget
 
 ### 0.0.3 (2026-11-25)
 

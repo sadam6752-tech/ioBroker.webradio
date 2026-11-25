@@ -3,7 +3,15 @@
 // The players in the Device Manager: the card, its details, and what the controls and actions write.
 
 const assert = require('node:assert/strict');
-const { RadioDeviceManagement, cardOf, detailsOf, SLEEP_OPTIONS } = require('../../lib/device-management');
+const {
+    RadioDeviceManagement,
+    cardOf,
+    detailsOf,
+    alarmForm,
+    daysToForm,
+    daysFromForm,
+    SLEEP_OPTIONS,
+} = require('../../lib/device-management');
 
 /** @type {any} */
 const kitchen = {
@@ -52,6 +60,15 @@ function setup() {
         streamOf: t =>
             t.kind === 'dune' ? { direct: true } : { direct: false, codec: 'flac', sampleRate: 48000, channels: 1 },
         checkStations: async () => [{ online: true }, { online: false }, { online: true }],
+        alarms: /** @type {any[]} */ ([]),
+        setAlarm: async (id, alarm) => {
+            app.alarms.push([id, alarm]);
+            if (alarm.time === '25:00') {
+                return '"25:00" is no time (HH:MM); the alarm is off';
+            }
+            states.set(`targets.${id}.alarmNext`, alarm.time ? '2026-11-27T05:30:00.000Z' : '');
+            return '';
+        },
         setStateAsync: async (id, st) => {
             app.written.push([id, st.val]);
             states.set(id, st.val);
@@ -75,6 +92,7 @@ describe('Device Manager', () => {
                 ['volume', 'slider', 'webradio.0.targets.kitchen.volume'],
                 ['title', 'info', 'webradio.0.targets.kitchen.title'],
                 ['sleep', 'select', 'webradio.0.targets.kitchen.sleep'],
+                ['alarmTime', 'info', 'webradio.0.targets.kitchen.alarmTime'],
             ],
         );
         assert.deepEqual(
@@ -87,7 +105,7 @@ describe('Device Manager', () => {
         );
         assert.deepEqual(
             card.actions.map(a => a.id),
-            ['prev', 'next'],
+            ['prev', 'next', 'alarm'],
         );
         const noVolume = cardOf(dune, { ns: 'webradio.0', stations });
         assert.ok(!noVolume.controls.some(c => c.id === 'volume'), 'no volume state, no slider');
@@ -156,5 +174,43 @@ describe('Device Manager', () => {
         const res = await /** @type {any} */ (info.actions?.[0]).handler({ showMessage: async m => shown.push(m) });
         assert.deepEqual(res, { refresh: false });
         assert.equal(shown[0].en, '2 of 3 stations answer.');
+    });
+
+    it('turns the weekdays into ticks of the form and back; none or all ticked = every day', () => {
+        assert.deepEqual(daysToForm('1-5'), { d1: true, d2: true, d3: true, d4: true, d5: true, d6: false, d7: false });
+        assert.deepEqual(Object.values(daysToForm('')), [false, false, false, false, false, false, false]);
+        assert.equal(daysFromForm({ d1: true, d3: true, d5: true }), '1,3,5');
+        assert.equal(daysFromForm({}), '');
+        assert.equal(daysFromForm({ d1: true, d2: true, d3: true, d4: true, d5: true, d6: true, d7: true }), '');
+        const form = /** @type {any} */ (alarmForm(stations)).items;
+        assert.deepEqual(
+            form.station.options.map(o => o.value),
+            ['', 'swr3', 'record'],
+        );
+        assert.equal(form.d1.label.de, 'Mo');
+        assert.equal(form.d7.label.ru, 'Вс');
+    });
+
+    it('sets the wake-up radio from the form of a card, and says when it rings next', async () => {
+        const { dm, app } = setup();
+        /** @type {any[]} */
+        const cards = [];
+        await dm.loadDevices(/** @type {any} */ ({ setTotalDevices() {}, addDevice: c => cards.push(c) }));
+        const action = cards[1].actions.find(a => a.id === 'alarm');
+        /** @type {any[]} */
+        const shown = [];
+        const ctx = answer => ({
+            showForm: async (_schema, o) => (shown.push(['form', o.data]), answer),
+            showMessage: async m => shown.push(['message', m]),
+        });
+        await action.handler('targets.kitchen', ctx({ time: '6:30', d1: true, d2: true, station: 'record' }));
+        assert.deepEqual(app.alarms[0], ['kitchen', { time: '6:30', days: '1,2', station: 'record' }]);
+        assert.match(shown[1][1].en, /^Next wake-up: /);
+        await action.handler('targets.kitchen', ctx(undefined));
+        assert.equal(app.alarms.length, 1, 'cancelled: nothing set');
+        await action.handler('targets.kitchen', ctx({ time: '25:00' }));
+        assert.match(shown[shown.length - 1][1], /no time/);
+        await action.handler('targets.kitchen', ctx({ time: '' }));
+        assert.equal(shown[shown.length - 1][1].en, 'The wake-up radio is off.');
     });
 });

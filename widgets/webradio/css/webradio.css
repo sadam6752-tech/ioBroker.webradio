@@ -6,6 +6,7 @@
 
 .wr-radio .wr-root {
     --wr-gap: 8px;
+    position: relative;
     box-sizing: border-box;
     width: 100%;
     height: 100%;
@@ -260,4 +261,95 @@
     color: var(--wr-muted);
     font-size: 12px;
     padding: 8px 0;
+}
+
+.wr-radio.wr-alarm-on .wr-alarm {
+    color: var(--wr-accent);
+    border-color: var(--wr-accent);
+}
+
+.wr-radio .wr-alarm-time {
+    font-size: 11px;
+}
+
+/* the wake-up radio: a panel over the stations */
+.wr-radio .wr-alarm-panel {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    background: var(--wr-bg);
+    color: var(--wr-text);
+    border-radius: 10px;
+}
+
+.wr-radio .wr-alarm-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+
+.wr-radio .wr-alarm-input,
+.wr-radio .wr-alarm-station {
+    padding: 6px;
+    border: 1px solid var(--wr-line);
+    border-radius: 6px;
+    background: var(--wr-tile);
+    color: var(--wr-text);
+    font: inherit;
+    font-size: 18px;
+}
+
+.wr-radio .wr-alarm-station {
+    font-size: 14px;
+}
+
+.wr-radio .wr-alarm-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.wr-radio .wr-day {
+    padding: 6px 0;
+    border: 1px solid var(--wr-line);
+    border-radius: 6px;
+    background: var(--wr-tile);
+    color: var(--wr-muted);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.wr-radio .wr-day.wr-on {
+    color: var(--wr-text);
+    border-color: var(--wr-accent);
+    background: var(--wr-accent);
+}
+
+.wr-radio .wr-alarm-next {
+    color: var(--wr-muted);
+    font-size: 12px;
+    min-height: 1em;
+}
+
+.wr-radio .wr-alarm-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.wr-radio .wr-alarm-buttons .wr-btn {
+    flex: 1 1 0;
+    height: 34px;
+}
+
+.wr-radio .wr-alarm-save {
+    border-color: var(--wr-accent) !important;
+    color: var(--wr-accent) !important;
 }

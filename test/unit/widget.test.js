@@ -59,6 +59,13 @@ describe('vis widget "Radio"', () => {
         assert.equal(w.volumeOf(140), 100);
         assert.equal(w.volumeOf(null), 0);
         assert.deepEqual([0, 15, 30, 60, 90, 45, '', 'x'].map(w.nextSleep), [15, 30, 60, 90, 0, 60, 15, 15]);
+        assert.deepEqual(w.daysToTicks('1-5'), [true, true, true, true, true, false, false]);
+        assert.deepEqual(w.daysToTicks('sa-mo'), [true, false, false, false, false, true, true]);
+        assert.deepEqual(w.daysToTicks('пн,ср'), [true, false, true, false, false, false, false]);
+        assert.deepEqual(w.daysToTicks(''), [false, false, false, false, false, false, false], 'every day');
+        assert.equal(w.ticksToDays([true, false, true, false, true, false, false]), '1,3,5');
+        assert.equal(w.ticksToDays([false, false, false, false, false, false, false]), '');
+        assert.equal(w.ticksToDays([true, true, true, true, true, true, true]), '');
     });
 
     it('has every word and attribute name in the eleven languages, translated', () => {

@@ -1017,6 +1017,31 @@ class Webradio extends utils.Adapter {
     }
 
     /**
+     * Sets the wake-up radio of a player in one go (the form of the Device Manager and the vis widget).
+     *
+     * @param {string} targetId - Player id
+     * @param {{time: string, days: string, station: string}} alarm - Time ('' = off), weekdays, station
+     * @returns {Promise<string>} Error text, '' = done
+     */
+    async setAlarm(targetId, alarm) {
+        const r = this.running.get(targetId);
+        if (!r) {
+            return `no player ${targetId}`;
+        }
+        for (const [key, value] of [
+            ['alarmDays', alarm.days],
+            ['alarmStation', alarm.station],
+            ['alarmTime', alarm.time],
+        ]) {
+            const error = await this.setAlarmState(r, key, value);
+            if (error) {
+                return error;
+            }
+        }
+        return '';
+    }
+
+    /**
      * @returns {{volume: number, fade: number}} End volume (%) and fade-in (minutes) of the wake-up radio, from the
      *   settings
      */

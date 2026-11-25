@@ -115,6 +115,61 @@
         return value === true || value === 'true';
     }
 
+    /** Weekday names the adapter understands in alarmDays (Monday first), besides 1 … 7 */
+    const DAY_KEYS = [
+        ['mo', 'mon', 'пн'],
+        ['tu', 'tue', 'di', 'вт'],
+        ['we', 'wed', 'mi', 'ср'],
+        ['th', 'thu', 'do', 'чт'],
+        ['fr', 'fri', 'пт'],
+        ['sa', 'sat', 'сб'],
+        ['su', 'sun', 'so', 'вс'],
+    ];
+
+    /**
+     * The weekdays of an alarmDays value as ticks (Monday first); '' = every day = none ticked.
+     *
+     * @param {unknown} value - "1-5", "1,3,5", "mo,we", ''
+     * @returns {boolean[]} Seven ticks
+     */
+    function daysToTicks(value) {
+        const ticks = [false, false, false, false, false, false, false];
+        const text = String(value == null ? '' : value)
+            .trim()
+            .toLowerCase();
+        const day = t => {
+            if (/^[1-7]$/.test(t)) {
+                return Number(t);
+            }
+            const i = DAY_KEYS.findIndex(names => names.includes(t));
+            return i >= 0 ? i + 1 : 0;
+        };
+        for (const part of text.split(/[,;\s]+/).filter(Boolean)) {
+            const range = part.split('-');
+            const a = day(range[0]);
+            const b = range.length === 2 ? day(range[1]) : a;
+            if (!a || !b) {
+                continue;
+            }
+            for (let d = a; ; d = (d % 7) + 1) {
+                ticks[d - 1] = true;
+                if (d === b) {
+                    break;
+                }
+            }
+        }
+        return ticks.every(Boolean) ? ticks.map(() => false) : ticks;
+    }
+
+    /**
+     * @param {boolean[]} ticks - Seven ticks, Monday first
+     * @returns {string} alarmDays ('' = every day)
+     */
+    function ticksToDays(ticks) {
+        const on = ticks.map((t, i) => (t ? i + 1 : 0)).filter(Boolean);
+        return on.length === 0 || on.length === 7 ? '' : on.join(',');
+    }
+
     /** Steps of the sleep button, in minutes; after the last one it turns off */
     const SLEEP_STEPS = [15, 30, 60, 90];
 
@@ -399,6 +454,97 @@
             'Немає улюблених станцій — додайте їх у налаштуваннях адаптера',
             '没有收藏的电台 — 请在适配器设置中添加',
         ],
+        wrAlarm: [
+            'Wake-up radio',
+            'Radiowecker',
+            'Радиобудильник',
+            'Rádio despertador',
+            'Wekkerradio',
+            'Radio-réveil',
+            'Radiosveglia',
+            'Radio despertador',
+            'Radiobudzik',
+            'Радіобудильник',
+            '收音机闹钟',
+        ],
+        wrAlarmSave: [
+            'Save',
+            'Speichern',
+            'Сохранить',
+            'Guardar',
+            'Opslaan',
+            'Enregistrer',
+            'Salva',
+            'Guardar',
+            'Zapisz',
+            'Зберегти',
+            '保存',
+        ],
+        wrAlarmOff: [
+            'Switch off',
+            'Ausschalten',
+            'Выключить',
+            'Desligar',
+            'Uitschakelen',
+            'Désactiver',
+            'Disattiva',
+            'Desactivar',
+            'Wyłącz',
+            'Вимкнути',
+            '关闭',
+        ],
+        wrAlarmLast: [
+            'Last station',
+            'Letzter Sender',
+            'Последняя станция',
+            'Última estação',
+            'Laatste zender',
+            'Dernière station',
+            'Ultima stazione',
+            'Última emisora',
+            'Ostatnia stacja',
+            'Остання станція',
+            '上一个电台',
+        ],
+        wrAlarmNext: [
+            'Next',
+            'Nächstes',
+            'Следующий',
+            'Próximo',
+            'Volgende',
+            'Prochain',
+            'Prossima',
+            'Próximo',
+            'Następne',
+            'Наступний',
+            '下次',
+        ],
+        wrAlarmEvery: [
+            'every day',
+            'täglich',
+            'каждый день',
+            'todos os dias',
+            'elke dag',
+            'tous les jours',
+            'ogni giorno',
+            'todos los días',
+            'codziennie',
+            'щодня',
+            '每天',
+        ],
+        wrDays: [
+            'Mo,Tu,We,Th,Fr,Sa,Su',
+            'Mo,Di,Mi,Do,Fr,Sa,So',
+            'Пн,Вт,Ср,Чт,Пт,Сб,Вс',
+            'Seg,Ter,Qua,Qui,Sex,Sáb,Dom',
+            'Ma,Di,Wo,Do,Vr,Za,Zo',
+            'Lu,Ma,Me,Je,Ve,Sa,Di',
+            'Lu,Ma,Me,Gi,Ve,Sa,Do',
+            'Lu,Ma,Mi,Ju,Vi,Sá,Do',
+            'Pn,Wt,Śr,Cz,Pt,So,Nd',
+            'Пн,Вт,Ср,Чт,Пт,Сб,Нд',
+            '一,二,三,四,五,六,日',
+        ],
         wrNoPlayer: [
             'Player not found',
             'Abspielgerät nicht gefunden',
@@ -437,6 +583,8 @@
         flag,
         volumeOf,
         nextSleep,
+        daysToTicks,
+        ticksToDays,
         dictionary,
         WORDS,
         LANGS,
@@ -456,11 +604,18 @@
     }
 
     /**
+     * @returns {string} Language of vis (one of LANGS)
+     */
+    function visLang() {
+        return typeof systemLang !== 'undefined' && LANGS.includes(systemLang) ? systemLang : 'en';
+    }
+
+    /**
      * @param {string} key - Word
      * @returns {string} Word in the language of vis
      */
     function word(key) {
-        const lang = typeof systemLang !== 'undefined' && LANGS.includes(systemLang) ? systemLang : 'en';
+        const lang = visLang();
         const w = WORDS[key];
         return w ? w[LANGS.indexOf(lang)] || w[0] : key;
     }
@@ -568,6 +723,21 @@
                     `<button type="button" class="wr-btn wr-next" title="${esc(word('wrNext'))}">&#9197;</button>` +
                     `<button type="button" class="wr-stop" title="${esc(word('wrStop'))}">&#9632;</button>` +
                     `<button type="button" class="wr-btn wr-sleep" title="${esc(word('wrSleep'))}">&#9790;<span class="wr-sleep-left"></span></button>` +
+                    `<button type="button" class="wr-btn wr-alarm" title="${esc(word('wrAlarm'))}">&#9200;<span class="wr-alarm-time"></span></button>` +
+                    '</div>' +
+                    '<div class="wr-alarm-panel" style="display:none">' +
+                    `<div class="wr-alarm-head"><span>${esc(word('wrAlarm'))}</span><button type="button" class="wr-btn wr-alarm-close">&#10005;</button></div>` +
+                    '<input type="time" class="wr-alarm-input">' +
+                    `<div class="wr-alarm-days">${word('wrDays')
+                        .split(',')
+                        .map((d, i) => `<button type="button" class="wr-day" data-day="${i}">${esc(d)}</button>`)
+                        .join('')}</div>` +
+                    '<select class="wr-alarm-station"></select>' +
+                    '<div class="wr-alarm-next"></div>' +
+                    '<div class="wr-alarm-buttons">' +
+                    `<button type="button" class="wr-btn wr-alarm-off">${esc(word('wrAlarmOff'))}</button>` +
+                    `<button type="button" class="wr-btn wr-alarm-save">${esc(word('wrAlarmSave'))}</button>` +
+                    '</div>' +
                     '</div>' +
                     '<div class="wr-now">' +
                     '<div class="wr-now-logo"></div>' +
@@ -706,6 +876,19 @@
                 $root.toggleClass('wr-sleeping', left > 0);
                 $root.find('.wr-sleep-left').text(left > 0 ? ` ${left}` : '');
                 $root.find('.wr-sleep').prop('disabled', !target || !playing);
+                const alarm = target ? String(valueOf(playerId('alarmTime')) || '') : '';
+                $root.toggleClass('wr-alarm-on', !!alarm);
+                $root.find('.wr-alarm-time').text(alarm ? ` ${alarm}` : '');
+                $root.find('.wr-alarm').prop('disabled', !target);
+                const next = target ? String(valueOf(playerId('alarmNext')) || '') : '';
+                const when = next ? new Date(next) : null;
+                $root
+                    .find('.wr-alarm-next')
+                    .text(
+                        when && !isNaN(when.getTime())
+                            ? `${word('wrAlarmNext')}: ${when.toLocaleString(visLang(), { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`
+                            : '',
+                    );
                 $root.find('.wr-resume').toggle(!playing);
                 $root.find('.wr-stop, .wr-volume-slider, .wr-prev, .wr-next, .wr-resume').prop('disabled', !target);
             };
@@ -716,7 +899,18 @@
                     drawNow();
                     return;
                 }
-                const ids = ['station', 'playing', 'title', 'volume', 'sleep', 'sleepLeft'].map(playerId);
+                const ids = [
+                    'station',
+                    'playing',
+                    'title',
+                    'volume',
+                    'sleep',
+                    'sleepLeft',
+                    'alarmTime',
+                    'alarmDays',
+                    'alarmStation',
+                    'alarmNext',
+                ].map(playerId);
                 load(ids, () => {
                     ids.forEach(id => bind(id, drawNow));
                     drawNow();
@@ -757,6 +951,50 @@
                 $root.on('click', '.wr-prev', () => target && vis.setValue(playerId('prev'), true));
                 $root.on('click', '.wr-next', () => target && vis.setValue(playerId('next'), true));
                 $root.on('click', '.wr-resume', () => target && vis.setValue(playerId('resume'), true));
+                const $panel = $root.find('.wr-alarm-panel');
+                // the panel shows the alarm of the player as it is; the changes go out with Save
+                const openAlarm = () => {
+                    const time = String(valueOf(playerId('alarmTime')) || '');
+                    $panel.find('.wr-alarm-input').val(time || '07:00');
+                    const ticks = daysToTicks(valueOf(playerId('alarmDays')));
+                    $panel.find('.wr-day').each(function (i) {
+                        $(this).toggleClass('wr-on', ticks[i]);
+                    });
+                    const $sel = $panel.find('.wr-alarm-station').empty();
+                    $sel.append($('<option>').val('').text(word('wrAlarmLast')));
+                    for (const st of stations) {
+                        $sel.append($('<option>').val(st.id).text(st.name));
+                    }
+                    $sel.val(String(valueOf(playerId('alarmStation')) || ''));
+                    $panel.show();
+                };
+                $root.on('click', '.wr-alarm', () => target && ($panel.is(':visible') ? $panel.hide() : openAlarm()));
+                $root.on('click', '.wr-alarm-close', () => $panel.hide());
+                $root.on('click', '.wr-day', function () {
+                    $(this).toggleClass('wr-on');
+                });
+                $root.on('click', '.wr-alarm-save', () => {
+                    if (!target) {
+                        return;
+                    }
+                    const ticks = $panel
+                        .find('.wr-day')
+                        .map(function () {
+                            return $(this).hasClass('wr-on');
+                        })
+                        .get();
+                    // days and station first: the time plans the alarm with them
+                    vis.setValue(playerId('alarmDays'), ticksToDays(ticks));
+                    vis.setValue(playerId('alarmStation'), String($panel.find('.wr-alarm-station').val() || ''));
+                    vis.setValue(playerId('alarmTime'), String($panel.find('.wr-alarm-input').val() || ''));
+                    $panel.hide();
+                });
+                $root.on('click', '.wr-alarm-off', () => {
+                    if (target) {
+                        vis.setValue(playerId('alarmTime'), '');
+                    }
+                    $panel.hide();
+                });
                 $root.on('click', '.wr-sleep', () => {
                     if (target) {
                         vis.setValue(playerId('sleep'), nextSleep(valueOf(playerId('sleep'))));
