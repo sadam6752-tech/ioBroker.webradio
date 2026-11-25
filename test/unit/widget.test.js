@@ -58,6 +58,7 @@ describe('vis widget "Radio"', () => {
         assert.equal(w.volumeOf('55.4'), 55);
         assert.equal(w.volumeOf(140), 100);
         assert.equal(w.volumeOf(null), 0);
+        assert.deepEqual([0, 15, 30, 60, 90, 45, '', 'x'].map(w.nextSleep), [15, 30, 60, 90, 0, 60, 15, 15]);
     });
 
     it('has every word and attribute name in the eleven languages, translated', () => {

@@ -115,6 +115,18 @@
         return value === true || value === 'true';
     }
 
+    /** Steps of the sleep button, in minutes; after the last one it turns off */
+    const SLEEP_STEPS = [15, 30, 60, 90];
+
+    /**
+     * @param {unknown} current - Value of the sleep state
+     * @returns {number} The next step, 0 = off
+     */
+    function nextSleep(current) {
+        const now = Number(current) || 0;
+        return SLEEP_STEPS.find(m => m > now) || 0;
+    }
+
     /**
      * @param {unknown} value - Volume state (0–100)
      * @returns {number} Volume for the slider
@@ -296,6 +308,58 @@
             'Стоп',
             '停止',
         ],
+        wrPrev: [
+            'Previous station',
+            'Vorheriger Sender',
+            'Предыдущая станция',
+            'Estação anterior',
+            'Vorige zender',
+            'Station précédente',
+            'Stazione precedente',
+            'Emisora anterior',
+            'Poprzednia stacja',
+            'Попередня станція',
+            '上一个电台',
+        ],
+        wrResume: [
+            'Play the last station',
+            'Letzten Sender abspielen',
+            'Включить последнюю станцию',
+            'Tocar a última estação',
+            'Laatste zender afspelen',
+            'Écouter la dernière station',
+            "Riproduci l'ultima stazione",
+            'Reproducir la última emisora',
+            'Odtwórz ostatnią stację',
+            'Увімкнути останню станцію',
+            '播放上一个电台',
+        ],
+        wrNext: [
+            'Next station',
+            'Nächster Sender',
+            'Следующая станция',
+            'Próxima estação',
+            'Volgende zender',
+            'Station suivante',
+            'Stazione successiva',
+            'Siguiente emisora',
+            'Następna stacja',
+            'Наступна станція',
+            '下一个电台',
+        ],
+        wrSleep: [
+            'Sleep timer: tap for 15, 30, 60, 90 min, off',
+            'Schlaftimer: tippen für 15, 30, 60, 90 min, aus',
+            'Таймер сна: нажмите для 15, 30, 60, 90 мин, выкл.',
+            'Temporizador: toque para 15, 30, 60, 90 min, desligar',
+            'Slaaptimer: tik voor 15, 30, 60, 90 min, uit',
+            'Minuterie : touchez pour 15, 30, 60, 90 min, arrêt',
+            'Timer: tocca per 15, 30, 60, 90 min, spento',
+            'Temporizador: toque para 15, 30, 60, 90 min, apagado',
+            'Wyłącznik: dotknij dla 15, 30, 60, 90 min, wył.',
+            'Таймер сну: натисніть для 15, 30, 60, 90 хв, вимк.',
+            '睡眠定时器：点击设为 15、30、60、90 分钟或关闭',
+        ],
         wrVolume: [
             'Volume',
             'Lautstärke',
@@ -372,6 +436,7 @@
         columnsOf,
         flag,
         volumeOf,
+        nextSleep,
         dictionary,
         WORDS,
         LANGS,
@@ -498,7 +563,11 @@
                     '<div class="wr-head">' +
                     `<select class="wr-player" title="${esc(word('wrPlayer'))}"></select>` +
                     '<span class="wr-player-name"></span>' +
+                    `<button type="button" class="wr-btn wr-prev" title="${esc(word('wrPrev'))}">&#9198;</button>` +
+                    `<button type="button" class="wr-btn wr-resume" title="${esc(word('wrResume'))}">&#9654;</button>` +
+                    `<button type="button" class="wr-btn wr-next" title="${esc(word('wrNext'))}">&#9197;</button>` +
                     `<button type="button" class="wr-stop" title="${esc(word('wrStop'))}">&#9632;</button>` +
+                    `<button type="button" class="wr-btn wr-sleep" title="${esc(word('wrSleep'))}">&#9790;<span class="wr-sleep-left"></span></button>` +
                     '</div>' +
                     '<div class="wr-now">' +
                     '<div class="wr-now-logo"></div>' +
@@ -633,7 +702,12 @@
                     $slider.val(vol);
                     $root.find('.wr-volume-value').text(target ? `${vol}%` : '');
                 }
-                $root.find('.wr-stop, .wr-volume-slider').prop('disabled', !target);
+                const left = target ? Number(valueOf(playerId('sleepLeft'))) || 0 : 0;
+                $root.toggleClass('wr-sleeping', left > 0);
+                $root.find('.wr-sleep-left').text(left > 0 ? ` ${left}` : '');
+                $root.find('.wr-sleep').prop('disabled', !target || !playing);
+                $root.find('.wr-resume').toggle(!playing);
+                $root.find('.wr-stop, .wr-volume-slider, .wr-prev, .wr-next, .wr-resume').prop('disabled', !target);
             };
 
             const followPlayer = () => {
@@ -642,7 +716,7 @@
                     drawNow();
                     return;
                 }
-                const ids = ['station', 'playing', 'title', 'volume'].map(playerId);
+                const ids = ['station', 'playing', 'title', 'volume', 'sleep', 'sleepLeft'].map(playerId);
                 load(ids, () => {
                     ids.forEach(id => bind(id, drawNow));
                     drawNow();
@@ -680,6 +754,14 @@
                     }
                 });
                 $root.on('click', '.wr-stop', () => target && vis.setValue(playerId('stop'), true));
+                $root.on('click', '.wr-prev', () => target && vis.setValue(playerId('prev'), true));
+                $root.on('click', '.wr-next', () => target && vis.setValue(playerId('next'), true));
+                $root.on('click', '.wr-resume', () => target && vis.setValue(playerId('resume'), true));
+                $root.on('click', '.wr-sleep', () => {
+                    if (target) {
+                        vis.setValue(playerId('sleep'), nextSleep(valueOf(playerId('sleep'))));
+                    }
+                });
                 $root.on('input', '.wr-volume-slider', function () {
                     $(this).data('dragging', true);
                     $root.find('.wr-volume-value').text(`${$(this).val()}%`);

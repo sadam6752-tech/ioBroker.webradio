@@ -32,11 +32,11 @@ describe('help', () => {
         );
     });
 
-    it('marks play and stop as writing, the rest as reading', () => {
+    it('marks the commands that play, step, time or stop as writing, the rest as reading', () => {
         const writing = COMMANDS.filter(c => c.write)
             .map(c => c.command)
             .sort();
-        assert.deepEqual(writing, ['play', 'stop']);
+        assert.deepEqual(writing, ['next', 'play', 'prev', 'resume', 'sleep', 'stop']);
     });
 
     it('gives a copy, so a caller cannot change the list', () => {

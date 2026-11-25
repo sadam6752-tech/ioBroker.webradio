@@ -58,22 +58,28 @@ and the path of an own ffmpeg (empty: the one that comes with the adapter).
 
 ## States
 
-| State                                                             | Meaning                                                 |
-| ----------------------------------------------------------------- | ------------------------------------------------------- |
-| `webradio.0.targets.<player>.station`                             | id of a favourite station; writing it plays the station |
-| `webradio.0.targets.<player>.play` / `.stop`                      | buttons                                                 |
-| `webradio.0.targets.<player>.playing`                             | a station of this adapter plays on the player           |
-| `webradio.0.targets.<player>.title`                               | now playing, as sent by the station                     |
-| `webradio.0.targets.<player>.cover`                               | logo of the playing station                             |
-| `webradio.0.targets.<player>.volume`                              | volume of the player, 0–100 %                           |
-| `webradio.0.targets.<player>.streamUrl`                           | the URL written to the player                           |
-| `webradio.0.stations.<station>.name` / `.url` / `.logo` / `.tags` | the favourites                                          |
-| `webradio.0.info.stations` / `webradio.0.info.targets`            | the favourites and the players as JSON (vis widget)     |
+| State                                                             | Meaning                                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `webradio.0.targets.<player>.station`                             | id of a favourite station; writing it plays the station                  |
+| `webradio.0.targets.<player>.play` / `.stop`                      | buttons (play without a selected station: like resume)                   |
+| `webradio.0.targets.<player>.resume`                              | button: the station that played last, else the first favourite           |
+| `webradio.0.targets.<player>.next` / `.prev`                      | buttons: next / previous favourite, wrapping around (also while stopped) |
+| `webradio.0.targets.<player>.sleep`                               | sleep timer in minutes, 0 = off; the volume fades out in the last 30 s   |
+| `webradio.0.targets.<player>.sleepLeft`                           | minutes left of the sleep timer                                          |
+| `webradio.0.targets.<player>.lastStation`                         | the station that played last (JSON), for resume                          |
+| `webradio.0.targets.<player>.playing`                             | a station of this adapter plays on the player                            |
+| `webradio.0.targets.<player>.title`                               | now playing, as sent by the station                                      |
+| `webradio.0.targets.<player>.cover`                               | logo of the playing station                                              |
+| `webradio.0.targets.<player>.volume`                              | volume of the player, 0–100 %                                            |
+| `webradio.0.targets.<player>.streamUrl`                           | the URL written to the player                                            |
+| `webradio.0.stations.<station>.name` / `.url` / `.logo` / `.tags` | the favourites                                                           |
+| `webradio.0.info.stations` / `webradio.0.info.targets`            | the favourites and the players as JSON (vis widget)                      |
 
 ## vis widget "Radio"
 
 The adapter brings a widget for vis (version 1): the logos of the favourite stations as tiles, a tap plays the station
-on the chosen player; above them the player choice, a stop button, the volume and what plays now (logo, station, title
+on the chosen player; above them the player choice, the buttons previous / last station / next / stop, a sleep button
+(each tap: 15, 30, 60, 90 minutes, off; it shows the minutes left), the volume and what plays now (logo, station, title
 sent by the station).
 
 vis copies the widget when it starts; the installation of this adapter restarts vis. In the vis editor the widget is
@@ -85,8 +91,8 @@ in the widget set **webradio**, named **Radio**. Its attributes:
 - **Columns**, **Show now playing**, **Show volume**, **Station names under the logos**
 - **Colours** — theme dark, light or auto (follows the device), and own colours for background, text, accent and tiles
 
-The widget reads `info.stations`, `info.targets` and `targets.<player>.station`, `playing`, `title`, `volume`, and
-writes `station`, `stop` and `volume` — nothing else. The logos come from the file storage through the web adapter
+The widget reads `info.stations`, `info.targets` and `targets.<player>.station`, `playing`, `title`, `volume`, `sleep`,
+`sleepLeft`, and writes `station`, `stop`, `resume`, `next`, `prev`, `sleep` and `volume` — nothing else. The logos come from the file storage through the web adapter
 (`/webradio.0.storage/logos/…`, the same address and protocol as vis), else from the stream server.
 
 vis 2 can show vis 1 widgets as well; this set was made and tried for vis 1.
@@ -101,6 +107,9 @@ vis 2 can show vis 1 widgets as well; this set was made and tried for vis 1.
 | `search_stations` | `{query, country?, tag?, limit?}` | `{query, stations: [{uuid, name, url, country, tags, codec, bitrate}], hint?}` |
 | `list_targets`    | `{}`                              | `{targets: [{id, name, rooms, kind, playing, station, title}]}`                |
 | `play`            | `{station, target?, room?}`       | `{ok, target, station, stationId, source, uuid?}`                              |
+| `resume`          | `{target?, room?}`                | like `play`; `already: true` when it plays                                     |
+| `next` / `prev`   | `{target?, room?}`                | like `play`                                                                    |
+| `sleep`           | `{minutes, target?, room?}`       | `{ok, target, minutes, endsAt}`; `minutes: 0` = off                            |
 | `stop`            | `{target?, room?}`                | `{ok, stopped}`                                                                |
 | `now_playing`     | `{target?, room?}`                | `{targets: [...]}`                                                             |
 
@@ -124,6 +133,12 @@ stations themselves see the same User-Agent and the address of the ioBroker host
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- Large station logos are scaled down to a PNG of 256 px instead of being left out
+- Resume the last station, next and previous favourite: buttons, messages and the vis widget
+- Sleep timer per player with a fade-out of the volume: state, message and the vis widget
 
 ### 0.0.1 (2026-11-25)
 

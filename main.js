@@ -14,7 +14,8 @@ const { listenOnFreePort } = require('./lib/port');
 const { STORAGE, LOGO_DIR, logoPath, normalizeLogoFile, migrateOldLogos } = require('./lib/storage');
 const { RadioBrowser, searchParams, sentQuery } = require('./lib/radio-browser');
 const { Channel, StreamServer, SourceReader, playableUrl } = require('./lib/proxy');
-const { downloadLogo, MIME } = require('./lib/logos');
+const { downloadLogo, shrinkLogo, MIME } = require('./lib/logos');
+const { rememberStation, resumeStation, stepStation, percentOf, SleepTimer } = require('./lib/control');
 const { stationList, targetList } = require('./lib/lists');
 const {
     normalizeStations,
@@ -46,6 +47,8 @@ const {
  * @property {string} url - URL written to the player
  * @property {string} title - ICY title
  * @property {{min?: unknown, max?: unknown} | null} volumeCommon - Range of the volume state (read once)
+ * @property {SleepTimer} sleep - Sleep timer
+ * @property {number | null} fadeFrom - Volume (%) before the sleep timer began to fade it, -1 = cannot fade, null = no fade
  */
 
 /** Port of the stream server, next to airplay-receiver (8095) */
@@ -123,6 +126,7 @@ class Webradio extends utils.Adapter {
         await this.setState('info.connection', { val: false, ack: true });
         this.catalog = new RadioBrowser({ userAgent: this.userAgent, server: String(this.config.catalogServer || '') });
         const ffmpegPath = String(this.config.ffmpegPath || '').trim() || String(require('ffmpeg-static') || '');
+        this.ffmpegPath = ffmpegPath;
 
         const st = normalizeStations(this.config.stations);
         this.stations = st.stations;
@@ -195,6 +199,14 @@ class Webradio extends utils.Adapter {
                 url: '',
                 title: '',
                 volumeCommon: null,
+                // the callbacks run later, when r exists
+                sleep: new SleepTimer({
+                    timers: this.timers,
+                    onLeft: minutes => void this.setState(`targets.${t.id}.sleepLeft`, { val: minutes, ack: true }),
+                    onFade: fraction => void this.fadeStep(r, fraction),
+                    onEnd: () => void this.sleepEnd(r),
+                }),
+                fadeFrom: null,
             };
             if (!way.direct) {
                 if (!ffmpegPath) {
@@ -372,6 +384,12 @@ class Webradio extends utils.Adapter {
             ['cover', 'string', 'media.cover', false, '', {}],
             ['volume', 'number', 'level.volume', true, 0, { min: 0, max: 100, unit: '%' }],
             ['streamUrl', 'string', 'text.url', false, '', {}],
+            ['resume', 'boolean', 'button', true, false, {}],
+            ['next', 'boolean', 'button.next', true, false, {}],
+            ['prev', 'boolean', 'button.prev', true, false, {}],
+            ['sleep', 'number', 'level.timer', true, 0, { min: 0, max: 720, unit: 'min' }],
+            ['sleepLeft', 'number', 'value', false, 0, { min: 0, unit: 'min' }],
+            ['lastStation', 'string', 'json', false, '', {}],
         ];
         for (const t of targets) {
             await this.extendObject(`targets.${t.id}`, {
@@ -395,8 +413,9 @@ class Webradio extends utils.Adapter {
                     native: {},
                 });
             }
-            // nothing plays after a start; the selected station and the volume stay
-            for (const key of ['playing', 'title', 'cover', 'streamUrl']) {
+            // nothing plays after a start and no sleep timer runs; the selected station, the volume and the last
+            // station stay
+            for (const key of ['playing', 'title', 'cover', 'streamUrl', 'sleep', 'sleepLeft']) {
                 const def = states.find(s => s[0] === key)?.[4];
                 await this.setState(`targets.${t.id}.${key}`, { val: def ?? '', ack: true });
             }
@@ -456,7 +475,16 @@ class Webradio extends utils.Adapter {
             }
             if (native.logoSource !== s.logo || !file || !(await this.fileExistsAsync(this.mount, file))) {
                 try {
-                    const img = await downloadLogo(s.logo, this.userAgent);
+                    const ffmpeg = this.ffmpegPath;
+                    const img = await downloadLogo(
+                        s.logo,
+                        this.userAgent,
+                        undefined,
+                        ffmpeg ? data => shrinkLogo(ffmpeg, data) : undefined,
+                    );
+                    if (img.scaled) {
+                        this.log.info(`${s.name}: logo scaled down (${img.scaled} → ${img.data.length} bytes)`);
+                    }
                     file = logoPath(`${s.id}.${img.ext}`);
                     await this.writeFileAsync(this.mount, file, img.data);
                     await this.extendObject(`stations.${s.id}`, { native: { logoSource: s.logo, logoFile: file } });
@@ -577,6 +605,7 @@ class Webradio extends utils.Adapter {
         if (!(await this.exists(r.t.urlState))) {
             return `the player ${r.t.name} does not exist any more (${r.t.urlState})`;
         }
+        await this.cancelSleep(r);
         this.stopReaders(r);
         r.station = station;
         r.title = '';
@@ -595,6 +624,7 @@ class Webradio extends utils.Adapter {
         r.playing = true;
         const base = `targets.${r.t.id}`;
         await this.setState(`${base}.station`, { val: station.id, ack: true });
+        await this.setState(`${base}.lastStation`, { val: JSON.stringify(rememberStation(station)), ack: true });
         await this.setState(`${base}.streamUrl`, { val: url, ack: true });
         await this.setState(`${base}.cover`, { val: this.coverOf(station), ack: true });
         await this.setState(`${base}.title`, { val: '', ack: true });
@@ -665,6 +695,137 @@ class Webradio extends utils.Adapter {
             await this.writeTarget(r.t.stopState, r.t.stopValue);
             await this.writeTarget(r.t.titleState, '', true);
         }
+        await this.cancelSleep(r);
+    }
+
+    /**
+     * The station to resume on a target: what played last (this run, else lastStation), else the first favourite.
+     *
+     * @param {Running} r - Target
+     * @returns {Promise<Station | null>} Station
+     */
+    async lastStationOf(r) {
+        if (r.station) {
+            return resumeStation(this.stations, rememberStation(r.station));
+        }
+        const saved = (await this.getStateAsync(`targets.${r.t.id}.lastStation`))?.val;
+        return resumeStation(this.stations, saved);
+    }
+
+    /**
+     * The next or previous favourite of a target, from the station that plays or played last.
+     *
+     * @param {Running} r - Target
+     * @param {1 | -1} step - 1 = next, -1 = previous
+     * @returns {Promise<Station | null>} Station
+     */
+    async stepStationOf(r, step) {
+        const last = await this.lastStationOf(r);
+        const current = r.station?.id ?? (last && this.stations.includes(last) ? last.id : '');
+        return stepStation(this.stations, current, step);
+    }
+
+    /**
+     * Starts or ends the sleep timer of a target.
+     *
+     * @param {Running} r - Target
+     * @param {number} minutes - Minutes, 0 = off
+     * @returns {Promise<string>} Error text, empty = done
+     */
+    async startSleep(r, minutes) {
+        const base = `targets.${r.t.id}`;
+        if (!(minutes > 0)) {
+            await this.cancelSleep(r);
+            await this.setState(`${base}.sleep`, { val: 0, ack: true });
+            return '';
+        }
+        if (!r.playing) {
+            await this.setState(`${base}.sleep`, { val: 0, ack: true });
+            return `nothing plays on ${r.t.name}`;
+        }
+        await this.cancelSleep(r);
+        const m = Math.min(720, minutes);
+        r.sleep.start(m);
+        await this.setState(`${base}.sleep`, { val: m, ack: true });
+        this.log.info(`${r.t.name}: sleep timer ${m} min`);
+        return '';
+    }
+
+    /**
+     * Ends the sleep timer of a target without stopping it; a faded volume comes back.
+     *
+     * @param {Running} r - Target
+     */
+    async cancelSleep(r) {
+        const was = r.sleep.active || r.fadeFrom !== null;
+        r.sleep.cancel();
+        const from = r.fadeFrom;
+        r.fadeFrom = null;
+        if (from !== null && from >= 0) {
+            await this.setVolume(r, from);
+        }
+        if (was) {
+            await this.setState(`targets.${r.t.id}.sleep`, { val: 0, ack: true });
+            await this.setState(`targets.${r.t.id}.sleepLeft`, { val: 0, ack: true });
+        }
+    }
+
+    /**
+     * One step of the fade-out before the sleep timer stops a target.
+     *
+     * @param {Running} r - Target
+     * @param {number} fraction - 1 … 0
+     */
+    async fadeStep(r, fraction) {
+        if (!r.t.volumeState || !r.playing) {
+            return;
+        }
+        if (r.fadeFrom === null) {
+            const obj = await this.getForeignObjectAsync(r.t.volumeState).catch(() => null);
+            r.volumeCommon = /** @type {{min?: unknown, max?: unknown}} */ (obj?.common || {});
+            const now = (await this.getForeignStateAsync(r.t.volumeState).catch(() => null))?.val;
+            const own = Number((await this.getStateAsync(`targets.${r.t.id}.volume`))?.val);
+            const from = percentOf(now, r.volumeCommon) ?? (own > 0 ? own : null);
+            r.fadeFrom = from && from > 0 ? from : -1;
+        }
+        if (r.fadeFrom > 0) {
+            await this.setVolume(r, Math.round(r.fadeFrom * Math.max(0, fraction)));
+        }
+    }
+
+    /**
+     * The sleep timer ran out: stop, then give the player its volume back.
+     *
+     * @param {Running} r - Target
+     */
+    async sleepEnd(r) {
+        this.log.info(`${r.t.name}: sleep timer ended`);
+        if (r.playing) {
+            await this.stopTarget(r, true);
+        } else {
+            await this.cancelSleep(r);
+        }
+        await this.setState(`targets.${r.t.id}.sleep`, { val: 0, ack: true });
+        await this.setState(`targets.${r.t.id}.sleepLeft`, { val: 0, ack: true });
+    }
+
+    /**
+     * What a command answers about a station that started.
+     *
+     * @param {Running} r - Target
+     * @param {Station} station - Station
+     * @returns {Record<string, unknown>} Answer
+     */
+    playedAnswer(r, station) {
+        const source = station.id ? 'favourite' : station.uuid ? 'catalog' : 'url';
+        return {
+            ok: true,
+            target: r.t.name,
+            station: station.name,
+            stationId: station.id,
+            source,
+            ...(source === 'catalog' ? { uuid: station.uuid } : {}),
+        };
     }
 
     /**
@@ -794,11 +955,30 @@ class Webradio extends utils.Adapter {
             }
         } else if (key === 'play' && state.val) {
             const selected = String((await this.getStateAsync(`targets.${targetId}.station`))?.val || '');
-            const station = this.stations.find(s => s.id === selected) || r.station;
+            const station = this.stations.find(s => s.id === selected) || (await this.lastStationOf(r));
             if (station) {
                 await this.playLogged(r, station);
             } else {
-                this.log.warn(`${r.t.name}: choose a station first (targets.${targetId}.station)`);
+                this.log.warn(`${r.t.name}: no station to play: add favourites in the settings`);
+            }
+        } else if (key === 'resume' && state.val) {
+            const station = r.playing ? null : await this.lastStationOf(r);
+            if (station) {
+                await this.playLogged(r, station);
+            } else if (!r.playing) {
+                this.log.warn(`${r.t.name}: no station to play: add favourites in the settings`);
+            }
+        } else if ((key === 'next' || key === 'prev') && state.val) {
+            const station = await this.stepStationOf(r, key === 'next' ? 1 : -1);
+            if (station) {
+                await this.playLogged(r, station);
+            } else {
+                this.log.warn(`${r.t.name}: no favourites to step through`);
+            }
+        } else if (key === 'sleep') {
+            const error = await this.startSleep(r, Number(state.val) || 0);
+            if (error) {
+                this.log.warn(`${r.t.name}: sleep timer not started: ${error}`);
             }
         } else if (key === 'stop' && state.val) {
             await this.stopTarget(r);
@@ -1019,17 +1199,52 @@ class Webradio extends utils.Adapter {
                 }
                 const r = sel.targets[0];
                 const error = await this.playStation(r, st.station);
+                answer(error ? { error } : { ...this.playedAnswer(r, st.station), source: st.source });
+            } else if (obj.command === 'resume' || obj.command === 'next' || obj.command === 'prev') {
+                const sel = await this.resolveTargets(msg, false);
+                if ('error' in sel) {
+                    answer(sel);
+                    return;
+                }
+                const r = sel.targets[0];
+                if (obj.command === 'resume' && r.playing && r.station) {
+                    answer({ ...this.playedAnswer(r, r.station), already: true });
+                    return;
+                }
+                const station =
+                    obj.command === 'resume'
+                        ? await this.lastStationOf(r)
+                        : await this.stepStationOf(r, obj.command === 'next' ? 1 : -1);
+                if (!station) {
+                    answer({ error: 'no favourite stations are configured' });
+                    return;
+                }
+                const error = await this.playStation(r, station);
+                answer(error ? { error } : this.playedAnswer(r, station));
+            } else if (obj.command === 'sleep') {
+                const sel = await this.resolveTargets(msg, false);
+                if ('error' in sel) {
+                    answer(sel);
+                    return;
+                }
+                const r = sel.targets[0];
+                const minutes = Number(msg.minutes);
+                if (!Number.isFinite(minutes) || minutes < 0) {
+                    answer({ error: 'minutes must be a number ≥ 0 (0 = off)' });
+                    return;
+                }
+                const error = await this.startSleep(r, minutes);
                 answer(
                     error
                         ? { error }
-                        : {
-                              ok: true,
-                              target: r.t.name,
-                              station: st.station.name,
-                              stationId: st.station.id,
-                              source: st.source,
-                              ...(st.source === 'catalog' ? { uuid: st.station.uuid } : {}),
-                          },
+                        : r.sleep.active
+                          ? {
+                                ok: true,
+                                target: r.t.name,
+                                minutes: Math.min(720, minutes),
+                                endsAt: new Date(r.sleep.endsAt).toISOString(),
+                            }
+                          : { ok: true, target: r.t.name, minutes: 0 },
                 );
             } else if (obj.command === 'stop') {
                 const sel = await this.resolveTargets(msg, true);
@@ -1105,6 +1320,7 @@ class Webradio extends utils.Adapter {
             const http = this.http;
             this.http = null;
             for (const r of this.running.values()) {
+                r.sleep.cancel();
                 this.stopReaders(r);
                 // a proxied stream ends with the adapter: stop that player; a player with a direct URL keeps playing
                 if (r.channel) {

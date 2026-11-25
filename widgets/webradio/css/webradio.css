@@ -100,6 +100,30 @@
     cursor: pointer;
 }
 
+.wr-radio .wr-btn {
+    flex: 0 0 auto;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 6px;
+    border: 1px solid var(--wr-line);
+    border-radius: 6px;
+    background: var(--wr-tile);
+    color: var(--wr-text);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.wr-radio.wr-sleeping .wr-sleep {
+    color: var(--wr-accent);
+    border-color: var(--wr-accent);
+}
+
+.wr-radio .wr-sleep-left {
+    font-size: 11px;
+}
+
 .wr-radio.wr-playing .wr-stop {
     color: var(--wr-accent);
     border-color: var(--wr-accent);

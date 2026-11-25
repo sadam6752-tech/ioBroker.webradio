@@ -343,6 +343,72 @@ tests.integration(path.join(__dirname, '..'), {
                 await send('stop', { target: 'cinema' });
             });
 
+            it('resumes the last station and steps through the favourites, by message and by button', async function () {
+                this.timeout(90_000);
+                await send('play', { station: 'test', target: 'kitchen' });
+                await send('stop', { target: 'kitchen' });
+                const last = JSON.parse(String(await state('webradio.0.targets.kitchen.lastStation')));
+                assert.equal(last.id, 'test_radio');
+                let res = await send('resume', { room: 'Kitchen' });
+                assert.deepEqual(res, {
+                    ok: true,
+                    target: 'Kitchen',
+                    station: 'Test Radio',
+                    stationId: 'test_radio',
+                    source: 'favourite',
+                });
+                res = await send('resume', { target: 'kitchen' });
+                assert.equal(res.already, true, 'resume while it plays changes nothing');
+                assert.equal((await send('next', { target: 'kitchen' })).stationId, 'playlist_radio');
+                assert.equal((await send('next', { target: 'kitchen' })).stationId, 'test_radio', 'wraps around');
+                assert.equal((await send('prev', { target: 'kitchen' })).stationId, 'playlist_radio');
+                await send('stop', { target: 'kitchen' });
+                // the buttons; next works while stopped too
+                await harness.states.setStateAsync('webradio.0.targets.kitchen.next', { val: true, ack: false });
+                await waitFor('webradio.0.targets.kitchen.station', v => v === 'test_radio');
+                await waitFor('webradio.0.targets.kitchen.playing', v => v === true);
+                await harness.states.setStateAsync('webradio.0.targets.kitchen.stop', { val: true, ack: false });
+                await waitFor('webradio.0.targets.kitchen.playing', v => v === false);
+                await harness.states.setStateAsync('webradio.0.targets.kitchen.resume', { val: true, ack: false });
+                await waitFor('webradio.0.targets.kitchen.playing', v => v === true);
+                assert.equal(await state('webradio.0.targets.kitchen.station'), 'test_radio');
+                await send('stop', { target: 'kitchen' });
+            });
+
+            it('sleep timer: refuses while stopped, ends with stop or a new station, fades out and stops', async function () {
+                this.timeout(120_000);
+                const VOLUME = `${SAT}.controls.player.volume`;
+                assert.match((await send('sleep', { minutes: 5, target: 'kitchen' })).error, /nothing plays/);
+                assert.match((await send('sleep', { minutes: -1, target: 'kitchen' })).error, /minutes/);
+                await send('play', { station: 'test', target: 'kitchen' });
+                let res = await send('sleep', { minutes: 5, target: 'kitchen' });
+                assert.equal(res.ok, true);
+                assert.equal(res.minutes, 5);
+                assert.ok(Math.abs(Date.parse(res.endsAt) - Date.now() - 300_000) < 10_000, res.endsAt);
+                await waitFor('webradio.0.targets.kitchen.sleepLeft', v => v === 5);
+                assert.equal(await state('webradio.0.targets.kitchen.sleep'), 5);
+                await send('next', { target: 'kitchen' });
+                await waitFor('webradio.0.targets.kitchen.sleep', v => v === 0, 5_000);
+                assert.equal(await state('webradio.0.targets.kitchen.sleepLeft'), 0, 'a new station ends the timer');
+                // the state: 0.6 min = 36 s, the fade begins after 6 s
+                await harness.states.setStateAsync(VOLUME, { val: 0.8, ack: true });
+                await harness.states.setStateAsync('webradio.0.targets.kitchen.sleep', { val: 0.6, ack: false });
+                await waitFor('webradio.0.targets.kitchen.sleep', v => v === 0.6);
+                await waitFor(VOLUME, v => typeof v === 'number' && v < 0.8 && v > 0, 20_000);
+                await waitFor('webradio.0.targets.kitchen.playing', v => v === false, 45_000);
+                assert.equal(await state(`${SAT}.controls.player.url`), 'stop');
+                await waitFor(VOLUME, v => v === 0.8, 5_000);
+                assert.equal(await state('webradio.0.targets.kitchen.sleep'), 0);
+                assert.equal(await state('webradio.0.targets.kitchen.sleepLeft'), 0);
+                // 0 turns it off
+                await send('play', { station: 'test', target: 'kitchen' });
+                await send('sleep', { minutes: 5, target: 'kitchen' });
+                res = await send('sleep', { minutes: 0, target: 'kitchen' });
+                assert.deepEqual(res, { ok: true, target: 'Kitchen', minutes: 0 });
+                assert.equal(await state('webradio.0.targets.kitchen.sleepLeft'), 0);
+                await send('stop', { target: 'kitchen' });
+            });
+
             it('skips a player whose objects were deleted, without writing to it', async function () {
                 this.timeout(60_000);
                 const res = await send('play', { station: 'test', target: 'gone' });
