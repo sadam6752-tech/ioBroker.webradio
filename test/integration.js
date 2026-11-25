@@ -421,6 +421,30 @@ tests.integration(path.join(__dirname, '..'), {
                 await send('stop', { target: 'kitchen' });
             });
 
+            it('keeps the titles that played on a player', async function () {
+                this.timeout(60_000);
+                const res = await send('history', { target: 'kitchen', limit: 50 });
+                assert.ok(
+                    res.targets[0].history.some(e => e.station === 'Test Radio'),
+                    'the favourite by its name',
+                );
+                assert.equal(res.targets.length, 1);
+                const h = res.targets[0].history;
+                assert.ok(h.length >= 2, JSON.stringify(h));
+                assert.equal(h[0].title, 'Test Artist - Test Song');
+                assert.ok(Date.parse(h[0].time) > Date.now() - 600_000);
+                assert.equal((await send('history', { target: 'kitchen', limit: 1 })).targets[0].history.length, 1);
+                const all = await send('history', {});
+                assert.ok(
+                    all.targets.some(t => t.id === 'cinema' && t.history.length >= 1),
+                    'Dune titles too',
+                );
+                const state = JSON.parse(
+                    String(await harness.states.getStateAsync('webradio.0.targets.kitchen.history').then(s => s?.val)),
+                );
+                assert.equal(state[0].title, 'Test Artist - Test Song');
+            });
+
             it('exports the favourites, and the admin adds the stations of a playlist to its table', async function () {
                 this.timeout(60_000);
                 const m3u = await send('export_stations', {});

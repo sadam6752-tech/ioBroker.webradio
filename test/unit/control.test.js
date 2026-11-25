@@ -3,7 +3,16 @@
 // Resume, next/previous favourite, the volume in percent, and the sleep timer with its fade-out (on a fake clock).
 
 const assert = require('node:assert/strict');
-const { rememberStation, resumeStation, stepStation, percentOf, SleepTimer } = require('../../lib/control');
+const {
+    rememberStation,
+    resumeStation,
+    stepStation,
+    percentOf,
+    addHistory,
+    readHistory,
+    SleepTimer,
+    HISTORY_SIZE,
+} = require('../../lib/control');
 
 /** @param {string} id - Id */
 const fav = id => ({ id, name: id.toUpperCase(), url: `http://x/${id}`, logo: '', tags: [], uuid: '' });
@@ -73,6 +82,26 @@ describe('player control', () => {
         assert.equal(percentOf(null), null);
         assert.equal(percentOf('', {}), null);
         assert.equal(percentOf(5, { min: 10, max: 10 }), null);
+    });
+
+    it('keeps the title history newest first, without repeats, at most 50 entries', () => {
+        const e = (ts, title, station = 'SWR3') => ({ ts, station, title });
+        let list = addHistory('', e(1, 'A - One'));
+        list = addHistory(JSON.stringify(list), e(2, 'A - One'));
+        assert.deepEqual(list, [e(1, 'A - One')], 'the same title again is no new entry');
+        list = addHistory(list, e(3, 'A - One', '1LIVE'));
+        list = addHistory(list, e(4, 'B - Two', '1LIVE'));
+        assert.deepEqual(
+            list.map(x => x.ts),
+            [4, 3, 1],
+        );
+        for (let i = 0; i < 60; i++) {
+            list = addHistory(list, e(10 + i, `T ${i}`));
+        }
+        assert.equal(list.length, HISTORY_SIZE);
+        assert.equal(list[0].title, 'T 59');
+        assert.deepEqual(readHistory('not json'), []);
+        assert.deepEqual(readHistory([{ ts: 'x', title: 'a' }, null, { ts: 5, title: 'ok' }]), [e(5, 'ok', '')]);
     });
 
     it('counts the minutes down, fades in the last 30 s, then ends', () => {

@@ -15,7 +15,15 @@ const { STORAGE, LOGO_DIR, logoPath, normalizeLogoFile, migrateOldLogos } = requ
 const { RadioBrowser, searchParams, sentQuery } = require('./lib/radio-browser');
 const { Channel, StreamServer, SourceReader, playableUrl } = require('./lib/proxy');
 const { downloadLogo, shrinkLogo, MIME } = require('./lib/logos');
-const { rememberStation, resumeStation, stepStation, percentOf, SleepTimer } = require('./lib/control');
+const {
+    rememberStation,
+    resumeStation,
+    stepStation,
+    percentOf,
+    addHistory,
+    readHistory,
+    SleepTimer,
+} = require('./lib/control');
 const { exportStations, importStations } = require('./lib/transfer');
 const { stationList, targetList } = require('./lib/lists');
 const {
@@ -391,6 +399,7 @@ class Webradio extends utils.Adapter {
             ['sleep', 'number', 'level.timer', true, 0, { min: 0, max: 720, unit: 'min' }],
             ['sleepLeft', 'number', 'value', false, 0, { min: 0, unit: 'min' }],
             ['lastStation', 'string', 'json', false, '', {}],
+            ['history', 'string', 'json', false, '[]', {}],
         ];
         for (const t of targets) {
             await this.extendObject(`targets.${t.id}`, {
@@ -861,6 +870,14 @@ class Webradio extends utils.Adapter {
         r.title = title;
         await this.setState(`targets.${r.t.id}.title`, { val: title, ack: true });
         await this.writeTarget(r.t.titleState, fitTitle(title || r.station?.name || '', r.t.titleBytes), true);
+        if (title) {
+            const id = `targets.${r.t.id}.history`;
+            const entry = { ts: Date.now(), station: r.station?.name || '', title };
+            const after = addHistory((await this.getStateAsync(id))?.val, entry);
+            if (after[0] === entry) {
+                await this.setState(id, { val: JSON.stringify(after), ack: true });
+            }
+        }
     }
 
     /**
@@ -1198,6 +1215,30 @@ class Webradio extends utils.Adapter {
                 } else {
                     answer({ targets: sel.targets.map(r => this.describe(r, rooms)) });
                 }
+            } else if (obj.command === 'history') {
+                const sel =
+                    msg.target || msg.room
+                        ? await this.resolveTargets(msg, true)
+                        : { targets: [...this.running.values()] };
+                if ('error' in sel) {
+                    answer(sel);
+                    return;
+                }
+                const limit = Math.max(1, Math.min(50, Math.round(Number(msg.limit) || 10)));
+                const out = [];
+                for (const r of sel.targets) {
+                    const list = readHistory((await this.getStateAsync(`targets.${r.t.id}.history`))?.val);
+                    out.push({
+                        id: r.t.id,
+                        name: r.t.name,
+                        history: list.slice(0, limit).map(e => ({
+                            time: new Date(e.ts).toISOString(),
+                            station: e.station,
+                            title: e.title,
+                        })),
+                    });
+                }
+                answer({ targets: out });
             } else if (obj.command === 'play') {
                 const sel = await this.resolveTargets(msg, false);
                 if ('error' in sel) {
