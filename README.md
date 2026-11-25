@@ -171,15 +171,16 @@ Nothing else is sent.
     ### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
+### 0.0.3 (2026-11-25)
 
 - Cover of the playing song from the iTunes Search API (setting, on by default; artist and title go to Apple)
 - Title history per player (`history` state and message)
 - Daily check of the favourites; a station of radio-browser.info that does not answer gets its new URL from there
 - Multiroom: one station on several players with one connection and one ffmpeg (`play` with `targets`)
-- Wake-up radio per player with a fade-in of the volume (`alarm…` states and the message `alarm`)
+- Wake-up radio per player (`alarm…` states and the message `alarm`); its volume and volume rise are settings
 - A stop on the player itself is noticed (its playback state); a volume change by hand ends the fade-in
-- Device Manager tab: a card per player with the radio switch, station, volume, sleep timer, previous / next
+- Device Manager: a card per player with the radio switch, station, volume, sleep timer, previous / next (tab
+  _Devices_ of the settings and of the admin)
 - Import and export of the favourites (M3U, PLS, JSON, URL lists); the search without a name lists the most played
   stations of a country
 

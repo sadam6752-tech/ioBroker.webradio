@@ -1,8 +1,21 @@
 {
     "common": {
         "name": "webradio",
-        "version": "0.0.2",
+        "version": "0.0.3",
         "news": {
+            "0.0.3": {
+                "en": "Cover of the playing song (iTunes), title history, daily check of the favourites, multiroom, wake-up radio with volume rise, Device Manager cards, import and export of the favourites; a stop on the player itself is noticed",
+                "de": "Cover des laufenden Titels (iTunes), Titelverlauf, tägliche Prüfung der Lieblingssender, Multiroom, Radiowecker mit ansteigender Lautstärke, Karten im Device Manager, Import und Export der Lieblingssender; ein Stopp am Abspielgerät selbst wird erkannt",
+                "ru": "Обложка играющей песни (iTunes), история треков, ежедневная проверка избранного, мультирум, радиобудильник с нарастанием громкости, карточки в Device Manager, импорт и экспорт избранного; остановка на самом плеере распознаётся",
+                "pt": "Capa da música em reprodução (iTunes), histórico de títulos, verificação diária das favoritas, multiroom, rádio despertador com aumento do volume, cartões no Device Manager, importação e exportação das favoritas; uma paragem no próprio leitor é detetada",
+                "nl": "Hoes van het spelende nummer (iTunes), titelgeschiedenis, dagelijkse controle van de favorieten, multiroom, wekkerradio met oplopend volume, kaarten in de Device Manager, import en export van de favorieten; een stop op de speler zelf wordt herkend",
+                "fr": "Pochette du morceau en cours (iTunes), historique des titres, contrôle quotidien des favorites, multiroom, radio-réveil avec montée du volume, cartes dans le Device Manager, import et export des favorites ; un arrêt sur le lecteur lui-même est détecté",
+                "it": "Copertina del brano in riproduzione (iTunes), cronologia dei titoli, controllo giornaliero delle preferite, multiroom, radiosveglia con aumento del volume, schede nel Device Manager, importazione ed esportazione delle preferite; uno stop sul lettore stesso viene riconosciuto",
+                "es": "Portada de la canción en reproducción (iTunes), historial de títulos, comprobación diaria de las favoritas, multiroom, radio despertador con subida del volumen, tarjetas en el Device Manager, importación y exportación de las favoritas; se detecta una parada en el propio reproductor",
+                "pl": "Okładka odtwarzanego utworu (iTunes), historia utworów, codzienne sprawdzanie ulubionych, multiroom, radiobudzik z narastaniem głośności, karty w Device Manager, import i eksport ulubionych; zatrzymanie na samym odtwarzaczu jest rozpoznawane",
+                "uk": "Обкладинка пісні, що грає (iTunes), історія треків, щоденна перевірка улюблених, мультирум, радіобудильник із наростанням гучності, картки в Device Manager, імпорт і експорт улюблених; зупинка на самому плеєрі розпізнається",
+                "zh-cn": "正在播放歌曲的封面（iTunes）、曲目历史、每日检查收藏电台、多房间播放、音量渐强的收音机闹钟、Device Manager 卡片、收藏电台的导入和导出；可识别在播放器上直接停止"
+            },
             "0.0.2": {
                 "en": "Large station logos are scaled down instead of left out; resume the last station, next and previous favourite; sleep timer with volume fade-out; new buttons in the vis widget",
                 "de": "Große Senderlogos werden verkleinert statt weggelassen; letzten Sender fortsetzen, nächster und vorheriger Lieblingssender; Schlaftimer mit Ausblenden der Lautstärke; neue Tasten im vis-Widget",
