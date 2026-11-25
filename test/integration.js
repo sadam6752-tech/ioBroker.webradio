@@ -14,24 +14,36 @@ const DUNE = 'dune-hd-remote.0';
 /**
  * @param {string} url - URL
  * @param {number} bytes - Read this many bytes, then close
- * @returns {Promise<{status: number, body: Buffer}>} Response
+ * @param {number} [ms] - Give up after this long
+ * @returns {Promise<{status: number, body: Buffer}>} Response; the body may be shorter when the server closed it
  */
-function fetchBytes(url, bytes) {
+function fetchBytes(url, bytes, ms = 20_000) {
     return new Promise((resolve, reject) => {
-        http.get(url, res => {
-            const parts = [];
-            let size = 0;
-            const done = () => resolve({ status: res.statusCode || 0, body: Buffer.concat(parts) });
+        const parts = [];
+        let size = 0;
+        let status = 0;
+        let over = false;
+        const done = () => {
+            if (!over) {
+                over = true;
+                req.destroy();
+                resolve({ status, body: Buffer.concat(parts) });
+            }
+        };
+        const req = http.get(url, res => {
+            status = res.statusCode || 0;
             res.on('data', d => {
                 parts.push(d);
                 size += d.length;
                 if (size >= bytes) {
-                    res.destroy();
                     done();
                 }
             });
             res.on('end', done);
-        }).on('error', reject);
+            res.on('close', done);
+        });
+        req.setTimeout(ms, done);
+        req.on('error', e => (over ? undefined : reject(e)));
     });
 }
 
@@ -149,7 +161,30 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             const state = async id => (await harness.states.getStateAsync(id))?.val;
-            const waitFor = async (id, test, ms = 10_000) => {
+            /** @returns {string} The warnings and errors of the adapter so far, for a failure message */
+            const adapterLog = () => {
+                const lines = [...harness.getLogs('warn'), ...harness.getLogs('error')]
+                    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                    .map(l => `${l.level}: ${l.message}`);
+                return lines.length ? `\nadapter log:\n${lines.slice(-15).join('\n')}` : '\nadapter log: no warnings';
+            };
+            /**
+             * The FLAC stream of the proxy: the first bytes, connecting again up to three times (a slow CI machine).
+             *
+             * @param {string} url - Stream URL
+             */
+            const readFlac = async url => {
+                let last = { status: 0, body: Buffer.alloc(0) };
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    last = await fetchBytes(url, 4000).catch(e => ({ status: -1, body: Buffer.from(String(e)) }));
+                    if (last.status === 200 && last.body.subarray(0, 4).toString('latin1') === 'fLaC') {
+                        return last;
+                    }
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+                assert.fail(`no FLAC from ${url}: HTTP ${last.status}, ${last.body.length} bytes${adapterLog()}`);
+            };
+            const waitFor = async (id, test, ms = 20_000) => {
                 let val;
                 for (let i = 0; i < ms / 100; i++) {
                     val = await state(id);
@@ -158,7 +193,7 @@ tests.integration(path.join(__dirname, '..'), {
                     }
                     await new Promise(r => setTimeout(r, 100));
                 }
-                assert.fail(`${id} = ${JSON.stringify(val)}`);
+                assert.fail(`${id} = ${JSON.stringify(val)}${adapterLog()}`);
             };
             const send = (command, message) =>
                 new Promise((resolve, reject) => {
@@ -170,7 +205,7 @@ tests.integration(path.join(__dirname, '..'), {
                 });
 
             it('creates the stations and the players (rows and found satellites)', async function () {
-                this.timeout(20_000);
+                this.timeout(60_000);
                 assert.equal(await state('webradio.0.stations.test_radio.url'), `${radio.base}/station`);
                 assert.equal(await state('webradio.0.info.connection'), true);
                 const kitchen = await harness.objects.getObjectAsync('webradio.0.targets.kitchen');
@@ -181,7 +216,7 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             it('keeps the logos in webradio.0.storage/logos, moves away the folder of 0.0.1, serves them', async function () {
-                this.timeout(20_000);
+                this.timeout(60_000);
                 const logoUrl = await waitFor('webradio.0.stations.test_radio.logo', v => String(v).includes('/logo/'));
                 assert.equal(logoUrl, `http://127.0.0.1:${HTTP_PORT}/logo/test_radio`);
                 const storage = await harness.objects.getObjectAsync('webradio.0.storage');
@@ -220,14 +255,14 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             it('answers help with the commands', async function () {
-                this.timeout(20_000);
+                this.timeout(60_000);
                 const res = await send('help', {});
                 assert.ok(res.help.includes('play {station'));
                 assert.ok(res.commands.some(c => c.command === 'play' && c.write === true));
             });
 
             it('plays a favourite in a room through the proxy: FLAC with the ICY title on the satellite', async function () {
-                this.timeout(30_000);
+                this.timeout(90_000);
                 const res = await send('play', { station: 'test', room: 'кухня' });
                 assert.deepEqual(res, {
                     ok: true,
@@ -242,9 +277,7 @@ tests.integration(path.join(__dirname, '..'), {
                 );
                 assert.match(url, new RegExp(`^http://127\\.0\\.0\\.1:${HTTP_PORT}/play/kitchen\\.flac\\?`));
                 assert.equal(await state('webradio.0.targets.kitchen.playing'), true);
-                const stream = await fetchBytes(url, 4000);
-                assert.equal(stream.status, 200);
-                assert.equal(stream.body.subarray(0, 4).toString('latin1'), 'fLaC');
+                await readFlac(url);
                 await waitFor('webradio.0.targets.kitchen.title', v => v === 'Test Artist - Test Song');
                 await waitFor(`${SAT}.controls.media_title`, v => v === 'Test Artist - Test Song');
                 const now = await send('now_playing', { room: 'Küche' });
@@ -252,7 +285,7 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             it('stops the satellite with its stop value', async function () {
-                this.timeout(20_000);
+                this.timeout(60_000);
                 const res = await send('stop', { target: 'kitchen' });
                 assert.deepEqual(res, { ok: true, stopped: ['kitchen'] });
                 await waitFor(`${SAT}.controls.player.url`, v => v === 'stop');
@@ -260,7 +293,7 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             it('gives Dune HD the station URL and reads the titles by itself', async function () {
-                this.timeout(20_000);
+                this.timeout(60_000);
                 await harness.states.setStateAsync('webradio.0.targets.cinema.station', {
                     val: 'test_radio',
                     ack: false,
@@ -272,7 +305,7 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             it('asks back when the player is missing or the station is ambiguous', async function () {
-                this.timeout(20_000);
+                this.timeout(60_000);
                 const noPlayer = await send('play', { station: 'test' });
                 assert.ok(noPlayer.ask && noPlayer.choices.includes('Kitchen'));
                 const twoStations = await send('play', { station: 'radio', target: 'kitchen' });
@@ -280,7 +313,7 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             it('says that a stream URL was played as a URL', async function () {
-                this.timeout(20_000);
+                this.timeout(60_000);
                 const res = await send('play', { station: `${radio.base}/station`, target: 'cinema' });
                 assert.deepEqual(res, {
                     ok: true,
@@ -293,7 +326,7 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             it('plays a .m3u redirect chain through the proxy and gives a direct player the stream of a playlist', async function () {
-                this.timeout(30_000);
+                this.timeout(90_000);
                 // like RPR1: the .m3u is no playlist, two redirects, a stream server with a bare LF in its status line
                 const res = await send('play', { station: `${radio.base}/rpr.m3u`, target: 'kitchen' });
                 assert.equal(res.ok, true, JSON.stringify(res));
@@ -301,9 +334,7 @@ tests.integration(path.join(__dirname, '..'), {
                     `${SAT}.controls.player.url`,
                     v => typeof v === 'string' && v.includes('/play/kitchen.flac?s=url'),
                 );
-                const stream = await fetchBytes(url, 4000);
-                assert.equal(stream.status, 200);
-                assert.equal(stream.body.subarray(0, 4).toString('latin1'), 'fLaC');
+                await readFlac(url);
                 await waitFor('webradio.0.targets.kitchen.title', v => v === 'Test Artist - Test Song');
                 await send('stop', { target: 'kitchen' });
                 // Dune HD plays by itself: it gets the stream inside the playlist, not the playlist
@@ -313,7 +344,7 @@ tests.integration(path.join(__dirname, '..'), {
             });
 
             it('skips a player whose objects were deleted, without writing to it', async function () {
-                this.timeout(20_000);
+                this.timeout(60_000);
                 const res = await send('play', { station: 'test', target: 'gone' });
                 assert.match(res.error, /does not exist/);
                 assert.equal(await harness.states.getStateAsync(`${GONE}.controls.player.url`), null);

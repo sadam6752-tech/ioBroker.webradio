@@ -20,7 +20,15 @@ function metaBlock(title) {
 }
 
 /**
- * Writes the endless stream: audio blocks of metaInt bytes, each followed by a title block when icy.
+ * Bytes per second of the test radio: 25 times the 64 kbit/s of the test MP3, still slow enough that a player whose
+ * ffmpeg takes 20 s to start on a busy CI machine does not reach the 4 MB backlog limit of the proxy. Sent as fast as
+ * the CPU allows, a cold ffmpeg made the proxy drop the player ("the player does not read the stream").
+ */
+const BYTES_PER_SECOND = 200_000;
+
+/**
+ * Writes the endless stream at BYTES_PER_SECOND: audio blocks of metaInt bytes, each followed by a title block when
+ * icy.
  *
  * @param {{write: (b: Buffer) => boolean, once: (e: string, f: () => void) => unknown, on: (e: string, f: () => void) => unknown}} out - Response or socket
  * @param {Buffer} audio - Audio bytes
@@ -32,23 +40,36 @@ function sendStream(out, audio, metaInt, titles, icy) {
     let pos = 0;
     let block = 0;
     let stopped = false;
+    /** @type {NodeJS.Timeout | undefined} */
+    let timer;
+    const started = Date.now();
     const send = () => {
-        while (!stopped) {
+        timer = undefined;
+        // the blocks due by now (the first one at once); the timers of Windows tick every ~15 ms
+        const due = 1 + Math.floor(((Date.now() - started) / 1000) * (BYTES_PER_SECOND / metaInt));
+        while (!stopped && block < due) {
             const chunk = Buffer.alloc(metaInt);
             for (let i = 0; i < metaInt; i++) {
                 chunk[i] = audio[pos++ % audio.length];
             }
             const parts = [chunk];
             if (icy) {
-                parts.push(metaBlock(titles[block++ % titles.length]));
+                parts.push(metaBlock(titles[block % titles.length]));
             }
+            block++;
             if (!out.write(Buffer.concat(parts))) {
                 out.once('drain', send);
                 return;
             }
         }
+        if (!stopped) {
+            timer = setTimeout(send, 10);
+        }
     };
-    out.on('close', () => (stopped = true));
+    out.on('close', () => {
+        stopped = true;
+        clearTimeout(timer);
+    });
     send();
 }
 
