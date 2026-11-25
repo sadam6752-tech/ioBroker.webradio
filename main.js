@@ -15,6 +15,7 @@ const { STORAGE, LOGO_DIR, logoPath, normalizeLogoFile, migrateOldLogos } = requ
 const { RadioBrowser } = require('./lib/radio-browser');
 const { Channel, StreamServer, SourceReader } = require('./lib/proxy');
 const { downloadLogo, MIME } = require('./lib/logos');
+const { stationList, targetList } = require('./lib/lists');
 const {
     normalizeStations,
     discoverTargets,
@@ -80,6 +81,8 @@ class Webradio extends utils.Adapter {
         this.httpPort = 0;
         /** @type {Map<string, string>} station id → logo file in the file storage */
         this.logoFiles = new Map();
+        /** @type {import('./lib/types').Target[]} */
+        this.targets = [];
         /** @type {Set<string>} states whose absence was already logged */
         this.missing = new Set();
         this.counter = 0;
@@ -127,6 +130,8 @@ class Webradio extends utils.Adapter {
             this.log.warn(`Skipped: ${p}`);
         }
         await this.createObjects(this.stations, tg.targets);
+        this.targets = tg.targets;
+        await this.writeLists();
 
         const http = new StreamServer(this.log, id => this.readLogo(id));
         this.http = http;
@@ -463,6 +468,18 @@ class Webradio extends utils.Adapter {
             await this.setState(`stations.${s.id}.logo`, { val: this.logoUrl(s.id), ack: true });
         }
         await this.removeStaleLogos(new Set(this.logoFiles.values()));
+        await this.writeLists();
+    }
+
+    /**
+     * Writes info.stations and info.targets, the lists the vis widget draws.
+     */
+    async writeLists() {
+        const rooms = await this.rooms();
+        const stations = stationList(this.stations, this.logoFiles, this.mount, s => this.coverOf(s));
+        const targets = targetList(this.targets, t => [...new Set(roomsOf(t, rooms).map(x => x.names[0]))]);
+        await this.setState('info.stations', { val: JSON.stringify(stations), ack: true });
+        await this.setState('info.targets', { val: JSON.stringify(targets), ack: true });
     }
 
     /**

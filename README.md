@@ -68,6 +68,28 @@ and the path of an own ffmpeg (empty: the one that comes with the adapter).
 | `webradio.0.targets.<player>.volume`                              | volume of the player, 0–100 %                           |
 | `webradio.0.targets.<player>.streamUrl`                           | the URL written to the player                           |
 | `webradio.0.stations.<station>.name` / `.url` / `.logo` / `.tags` | the favourites                                          |
+| `webradio.0.info.stations` / `webradio.0.info.targets`            | the favourites and the players as JSON (vis widget)     |
+
+## vis widget "Radio"
+
+The adapter brings a widget for vis (version 1): the logos of the favourite stations as tiles, a tap plays the station
+on the chosen player; above them the player choice, a stop button, the volume and what plays now (logo, station, title
+sent by the station).
+
+vis copies the widget when it starts; the installation of this adapter restarts vis. In the vis editor the widget is
+in the widget set **webradio**, named **Radio**. Its attributes:
+
+- **Adapter instance** — `webradio.0` unless you run more than one instance
+- **Fixed player** — id or name of a player (`kitchen`, `Kitchen`); empty: a list to choose the player from, the
+  choice is remembered on each device
+- **Columns**, **Show now playing**, **Show volume**, **Station names under the logos**
+- **Colours** — theme dark, light or auto (follows the device), and own colours for background, text, accent and tiles
+
+The widget reads `info.stations`, `info.targets` and `targets.<player>.station`, `playing`, `title`, `volume`, and
+writes `station`, `stop` and `volume` — nothing else. The logos come from the file storage through the web adapter
+(`/webradio.0.storage/logos/…`, the same address and protocol as vis), else from the stream server.
+
+vis 2 can show vis 1 widgets as well; this set was made and tried for vis 1.
 
 ## Messages (scripts and AI agents)
 
@@ -103,6 +125,8 @@ stations themselves see the same User-Agent and the address of the ioBroker host
   declares (js-controller 8)
 - Station logos are kept in the file storage `webradio.0.storage/logos`; the folder `webradio.0.logos` of 0.0.1 is
   moved once
+- vis widget "Radio": station logos as tiles, player choice, stop, volume and now playing; the lists
+  `info.stations` and `info.targets` for it
 
 ### 0.0.1 (2026-11-25)
 

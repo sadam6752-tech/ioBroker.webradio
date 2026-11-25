@@ -173,6 +173,17 @@ tests.integration(path.join(__dirname, '..'), {
                 // the moved logo of a station without logo URL is removed as stale
                 assert.equal(await readFile('webradio.0.storage', 'logos/playlist_radio.png'), null);
                 assert.equal(await readFile('webradio.0.logos', 'playlist_radio.png'), null, 'old file removed');
+                // the lists of the vis widget name the cached file and the players
+                const stations = JSON.parse(String(await waitFor('webradio.0.info.stations', v => String(v).includes('storage/logos'))));
+                assert.deepEqual(stations.find(s => s.id === 'test_radio'), {
+                    id: 'test_radio',
+                    name: 'Test Radio',
+                    logo: logoUrl,
+                    file: 'webradio.0.storage/logos/test_radio.png',
+                });
+                const targets = JSON.parse(String(await state('webradio.0.info.targets')));
+                assert.deepEqual(targets.find(t => t.id === 'kitchen')?.rooms, ['Kitchen']);
+                assert.ok(targets.some(t => t.id === 'cinema'));
                 const served = await fetchBytes(logoUrl, 11);
                 assert.equal(served.status, 200);
                 assert.equal(served.body.subarray(1, 4).toString('latin1'), 'PNG');

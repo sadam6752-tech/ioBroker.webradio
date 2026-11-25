@@ -1,0 +1,24 @@
+<!--
+    ioBroker.webradio — widget set for vis (vis 1)
+
+    Copyright 2026 sadam6752-tech
+    MIT License
+-->
+<link rel="stylesheet" type="text/css" href="widgets/webradio/css/webradio.css" />
+<script type="text/javascript" src="widgets/webradio/js/webradio.js"></script>
+
+<script id="tplWebradioRadio"
+        type="text/ejs"
+        class="vis-tpl"
+        data-vis-set="webradio"
+        data-vis-name="Radio"
+        data-vis-type="ctrl,media"
+        data-vis-resizable="true"
+        data-vis-prev='<div style="width:150px;height:110px;border-radius:8px;background:#1e2228;color:#e8eaed;font:11px sans-serif;padding:6px;box-sizing:border-box"><div style="display:flex;justify-content:space-between"><span>Kitchen &#9662;</span><span>&#9632;</span></div><div style="margin:6px 0;font-weight:600">Radio &middot; Artist - Song</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px"><div style="height:26px;border-radius:4px;background:#2b3038;border:2px solid #4fc3f7"></div><div style="height:26px;border-radius:4px;background:#2b3038"></div><div style="height:26px;border-radius:4px;background:#2b3038"></div><div style="height:26px;border-radius:4px;background:#2b3038"></div></div></div>'
+        data-vis-attrs="radioInstance[webradio.0];radioPlayer;radioColumns[4]/slider,1,12,1;radioShowTitle[true]/checkbox;radioShowVolume[true]/checkbox;radioShowNames[true]/checkbox;"
+        data-vis-attrs0="group.radioColors;radioTheme[dark]/select,dark,light,auto;radioBackground/color;radioText/color;radioAccent/color;radioTile/color;"
+        >
+    <div class="vis-widget <%== this.data.attr('class') %>" style="width:360px;height:420px" id="<%= this.data.attr('wid') %>"><%
+        vis.binds.webradio.radio(this.data.wid, this.data);
+    %></div>
+</script>

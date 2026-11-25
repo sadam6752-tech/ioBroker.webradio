@@ -52,6 +52,7 @@
     "lib/",
     "io-package.json",
     "LICENSE",
+    "widgets/",
     "main.js"
   ],
   "scripts": {

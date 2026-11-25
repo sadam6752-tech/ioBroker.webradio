@@ -88,6 +88,10 @@
             }
         ],
         "messagebox": true,
+        "restartAdapters": [
+            "vis",
+            "vis-2"
+        ],
         "supportedMessages": {
             "help": true
         },
@@ -149,6 +153,56 @@
                 "read": true,
                 "write": false,
                 "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.stations",
+            "type": "state",
+            "common": {
+                "role": "json",
+                "name": {
+                    "en": "Favourite stations (JSON list for the vis widget)",
+                    "de": "Lieblingssender (JSON-Liste für das vis-Widget)",
+                    "ru": "Избранные станции (JSON-список для виджета vis)",
+                    "pt": "Estações favoritas (lista JSON para o widget vis)",
+                    "nl": "Favoriete zenders (JSON-lijst voor de vis-widget)",
+                    "fr": "Stations favorites (liste JSON pour le widget vis)",
+                    "it": "Stazioni preferite (elenco JSON per il widget vis)",
+                    "es": "Emisoras favoritas (lista JSON para el widget de vis)",
+                    "pl": "Ulubione stacje (lista JSON dla widżetu vis)",
+                    "uk": "Улюблені станції (JSON-список для віджета vis)",
+                    "zh-cn": "收藏的电台（vis 小部件的 JSON 列表）"
+                },
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": "[]"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.targets",
+            "type": "state",
+            "common": {
+                "role": "json",
+                "name": {
+                    "en": "Players (JSON list for the vis widget)",
+                    "de": "Abspielgeräte (JSON-Liste für das vis-Widget)",
+                    "ru": "Плееры (JSON-список для виджета vis)",
+                    "pt": "Leitores (lista JSON para o widget vis)",
+                    "nl": "Spelers (JSON-lijst voor de vis-widget)",
+                    "fr": "Lecteurs (liste JSON pour le widget vis)",
+                    "it": "Lettori (elenco JSON per il widget vis)",
+                    "es": "Reproductores (lista JSON para el widget de vis)",
+                    "pl": "Odtwarzacze (lista JSON dla widżetu vis)",
+                    "uk": "Плеєри (JSON-список для віджета vis)",
+                    "zh-cn": "播放器（vis 小部件的 JSON 列表）"
+                },
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": "[]"
             },
             "native": {}
         }
