@@ -92,6 +92,7 @@ tests.integration(path.join(__dirname, '..'), {
                 for (const [id, type, role, extra] of [
                     [`${SAT}.controls.player.url`, 'string', 'media.url', {}],
                     [`${SAT}.controls.player.volume`, 'number', 'level.volume', { min: 0, max: 1 }],
+                    [`${SAT}.controls.player.state`, 'string', 'media.state', {}],
                     [`${SAT}.controls.media_title`, 'string', 'text', {}],
                     [`${GONE}.controls.player.url`, 'string', 'media.url', {}],
                     [`${BATH}.controls.player.url`, 'string', 'media.url', {}],
@@ -452,7 +453,7 @@ tests.integration(path.join(__dirname, '..'), {
                     days: '',
                     station: 'Playlist Radio',
                     volume: 60,
-                    fade: 0.1,
+                    fade: 0.5,
                 });
                 assert.equal(res.alarm.time, time);
                 assert.equal(res.alarm.station, 'playlist_radio');
@@ -462,9 +463,13 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.equal(await state('webradio.0.targets.kitchen.alarmNext'), res.alarm.next);
                 await waitFor('webradio.0.targets.kitchen.playing', v => v === true, 80_000);
                 assert.equal(await state('webradio.0.targets.kitchen.station'), 'playlist_radio');
-                assert.ok(Number(await state(VOLUME)) < 0.6, 'starts low');
-                await waitFor(VOLUME, v => v === 0.6, 15_000);
-                await waitFor('webradio.0.targets.kitchen.volume', v => v === 60, 5_000);
+                assert.ok(Number(await state(VOLUME)) < 0.2, 'starts low');
+                // it rises in steps of 5 s …
+                await waitFor(VOLUME, v => typeof v === 'number' && v >= 0.1 && v < 0.6, 15_000);
+                // … until the volume is changed by hand: the fade-in ends there
+                await harness.states.setStateAsync(VOLUME, { val: 0.95, ack: false });
+                await new Promise(r => setTimeout(r, 7000));
+                assert.equal(await state(VOLUME), 0.95, 'no further step after the change by hand');
                 const after = Date.parse(String(await state('webradio.0.targets.kitchen.alarmNext')));
                 assert.ok(after > Date.now() + 23 * 3600_000, 'tomorrow again');
                 await send('alarm', { target: 'kitchen', time: '' });
@@ -547,6 +552,24 @@ tests.integration(path.join(__dirname, '..'), {
                 );
                 // the admin search without a name: the most played stations of a country (needs radio-browser.info)
                 assert.deepEqual(await send('adminSearch', { query: '', country: '' }), []);
+            });
+
+            it('notices a stop on the player itself (its playback state), but not before it played', async function () {
+                this.timeout(60_000);
+                const PLAYBACK = `${SAT}.controls.player.state`;
+                await send('play', { station: 'test', target: 'kitchen' });
+                // idle before the player started: still starting, nothing stops
+                await harness.states.setStateAsync(PLAYBACK, { val: 'idle', ack: true });
+                await new Promise(r => setTimeout(r, 1000));
+                assert.equal(await state('webradio.0.targets.kitchen.playing'), true);
+                await harness.states.setStateAsync(PLAYBACK, { val: 'playing', ack: true });
+                await harness.states.setStateAsync(PLAYBACK, { val: 'announcing', ack: true });
+                await new Promise(r => setTimeout(r, 500));
+                assert.equal(await state('webradio.0.targets.kitchen.playing'), true, 'an announcement is no stop');
+                const url = await state(`${SAT}.controls.player.url`);
+                await harness.states.setStateAsync(PLAYBACK, { val: 'idle', ack: true });
+                await waitFor('webradio.0.targets.kitchen.playing', v => v === false);
+                assert.equal(await state(`${SAT}.controls.player.url`), url, 'nothing written to the player');
             });
 
             it('multiroom: one station on two satellites, one connection to the station', async function () {

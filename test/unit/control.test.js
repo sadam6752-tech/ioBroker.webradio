@@ -8,6 +8,8 @@ const {
     resumeStation,
     stepStation,
     percentOf,
+    playbackOf,
+    ownVolume,
     addHistory,
     readHistory,
     SleepTimer,
@@ -82,6 +84,28 @@ describe('player control', () => {
         assert.equal(percentOf(null), null);
         assert.equal(percentOf('', {}), null);
         assert.equal(percentOf(5, { min: 10, max: 10 }), null);
+    });
+
+    it('reads the playback state of a player: playing, stopped, or something in between', () => {
+        for (const v of ['playing', 'PLAY', true]) {
+            assert.equal(playbackOf(v), 'playing', String(v));
+        }
+        for (const v of ['idle', 'paused', 'stop', 'off', false]) {
+            assert.equal(playbackOf(v), 'stopped', String(v));
+        }
+        for (const v of ['announcing', '', null, 'buffering']) {
+            assert.equal(playbackOf(v), 'other', String(v));
+        }
+    });
+
+    it('tells its own volume (an echo) from one set by hand', () => {
+        assert.equal(ownVolume([0.1, 0.2], 0.2, { min: 0, max: 1 }), true);
+        assert.equal(ownVolume([0.1, 0.2], 0.21, { min: 0, max: 1 }), true, 'rounded by the device');
+        assert.equal(ownVolume([0.1, 0.2], 0.5, { min: 0, max: 1 }), false);
+        assert.equal(ownVolume([20, 30], 31, { min: 0, max: 100 }), true);
+        assert.equal(ownVolume([20, 30], 45, { min: 0, max: 100 }), false);
+        assert.equal(ownVolume([], 0.3, null), false);
+        assert.equal(ownVolume([0.1], 'x', null), true, 'no number: not a change by hand');
     });
 
     it('keeps the title history newest first, without repeats, at most 50 entries', () => {

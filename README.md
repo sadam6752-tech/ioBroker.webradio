@@ -54,6 +54,8 @@ the station is sent: _Automatic_ (proxy for ESPHome players, the station URL for
 _Proxy FLAC_ or _Proxy MP3_. A row with the play URL state of a found player changes that player, a switched-off row
 hides it.
 
+A stop on the player itself (its button or its own UI) is noticed through its playback state (the state with role `media.state` next to the URL state, as ioBroker.assistant and satellite-display have it): the adapter stops too, with the sleep timer and the fade-in of the wake-up radio. Changing the volume on the player during the fade-in ends the fade-in.
+
 A player whose objects were deleted (a removed satellite) is skipped with one warning in the log; nothing is written
 to it.
 
@@ -175,6 +177,7 @@ Nothing else is sent.
 - Daily check of the favourites; a station of radio-browser.info that does not answer gets its new URL from there
 - Multiroom: one station on several players with one connection and one ffmpeg (`play` with `targets`)
 - Wake-up radio per player with a fade-in of the volume (`alarm…` states and the message `alarm`)
+- A stop on the player itself is noticed (its playback state); a volume change by hand ends the fade-in
 - Device Manager tab: a card per player with the radio switch, station, volume, sleep timer, previous / next
 - Import and export of the favourites (M3U, PLS, JSON, URL lists); the search without a name lists the most played
   stations of a country

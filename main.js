@@ -21,6 +21,8 @@ const {
     resumeStation,
     stepStation,
     percentOf,
+    playbackOf,
+    ownVolume,
     addHistory,
     readHistory,
     SleepTimer,
@@ -64,6 +66,9 @@ const {
  * @property {number | null} fadeFrom - Volume (%) before the sleep timer began to fade it, -1 = cannot fade, null = no fade
  * @property {Ramp} ramp - Fade-in of the wake-up radio
  * @property {unknown} alarmTimer - Timer of the next wake-up
+ * @property {string} stateId - Playback state of the player (role media.state), '' = none
+ * @property {boolean} seenPlaying - The player reported playing since this adapter started the station
+ * @property {number[]} wroteVolume - The last values this adapter wrote to the volume state of the player
  */
 
 /** Port of the stream server, next to airplay-receiver (8095) */
@@ -96,6 +101,10 @@ class Webradio extends utils.Adapter {
         this.running = new Map();
         /** @type {Map<string, Running>} play URL state → target */
         this.byUrlState = new Map();
+        /** @type {Map<string, Running>} playback state of a player → target */
+        this.byPlayerState = new Map();
+        /** @type {Map<string, Running>} volume state of a player → target */
+        this.byVolumeState = new Map();
         /** @type {StreamServer | null} */
         this.http = null;
         this.httpPort = 0;
@@ -233,6 +242,9 @@ class Webradio extends utils.Adapter {
                 fadeFrom: null,
                 ramp: new Ramp(this.timers),
                 alarmTimer: null,
+                stateId: '',
+                seenPlaying: false,
+                wroteVolume: [],
             };
             if (!way.direct) {
                 if (!ffmpegPath) {
@@ -256,6 +268,13 @@ class Webradio extends utils.Adapter {
             }
             this.running.set(t.id, r);
             this.byUrlState.set(t.urlState, r);
+            r.stateId = await this.playerStateOf(t);
+            if (r.stateId) {
+                this.byPlayerState.set(r.stateId, r);
+            }
+            if (t.volumeState) {
+                this.byVolumeState.set(t.volumeState, r);
+            }
         }
         await this.extendObject('info.checkStations', {
             type: 'state',
@@ -271,6 +290,9 @@ class Webradio extends utils.Adapter {
         });
         await this.subscribeStatesAsync('targets.*');
         await this.subscribeStatesAsync('info.checkStations');
+        for (const id of [...this.byPlayerState.keys(), ...this.byVolumeState.keys()]) {
+            await this.subscribeForeignStatesAsync(id);
+        }
         for (const id of this.byUrlState.keys()) {
             await this.subscribeForeignStatesAsync(id);
         }
@@ -683,6 +705,7 @@ class Webradio extends utils.Adapter {
         }
         await this.cancelSleep(r);
         r.ramp.cancel();
+        r.seenPlaying = false;
         this.stopReaders(r);
         r.station = station;
         r.title = '';
@@ -1199,7 +1222,25 @@ class Webradio extends utils.Adapter {
             const obj = await this.getForeignObjectAsync(r.t.volumeState).catch(() => null);
             r.volumeCommon = /** @type {{min?: unknown, max?: unknown}} */ (obj?.common || {});
         }
-        await this.writeTarget(r.t.volumeState, scaleVolume(percent / 100, r.volumeCommon));
+        const value = scaleVolume(percent / 100, r.volumeCommon);
+        r.wroteVolume = [...r.wroteVolume.slice(-2), value];
+        await this.writeTarget(r.t.volumeState, value);
+    }
+
+    /**
+     * The playback state of a player: the state with role media.state next to its URL state (ioBroker.assistant:
+     * controls.<player>.state, satellite-display: media.state).
+     *
+     * @param {Target} t - Player
+     * @returns {Promise<string>} State id, '' = none
+     */
+    async playerStateOf(t) {
+        const id = t.urlState.replace(/\.[^.]+$/, '.state');
+        if (id === t.urlState) {
+            return '';
+        }
+        const obj = await this.getForeignObjectAsync(id).catch(() => null);
+        return obj?.type === 'state' && obj.common?.role === 'media.state' ? id : '';
     }
 
     /**
@@ -1208,6 +1249,27 @@ class Webradio extends utils.Adapter {
      */
     async onStateChange(id, state) {
         if (!state) {
+            return;
+        }
+        const byState = this.byPlayerState.get(id);
+        if (byState) {
+            // stopped on the player itself (its button, its own UI): the URL stays, only the playback state says it
+            const playback = playbackOf(state.val);
+            if (byState.playing && playback === 'playing') {
+                byState.seenPlaying = true;
+            } else if (byState.playing && byState.seenPlaying && playback === 'stopped') {
+                this.log.info(`${byState.t.name}: stopped on the player`);
+                await this.stopTarget(byState, false);
+            }
+            return;
+        }
+        const byVolume = this.byVolumeState.get(id);
+        if (byVolume) {
+            // the volume changed on the player or by hand: the fade-in of the wake-up radio ends
+            if (byVolume.ramp.active && !ownVolume(byVolume.wroteVolume, state.val, byVolume.volumeCommon)) {
+                this.log.info(`${byVolume.t.name}: volume changed by hand, the fade-in ends`);
+                byVolume.ramp.cancel();
+            }
             return;
         }
         const foreign = this.byUrlState.get(id);
