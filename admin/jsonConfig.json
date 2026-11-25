@@ -1,0 +1,304 @@
+{
+    "i18n": true,
+    "type": "tabs",
+    "items": {
+        "_stationsTab": {
+            "type": "panel",
+            "label": "Stations",
+            "items": {
+                "_searchHeader": {
+                    "type": "header",
+                    "text": "Find a station in radio-browser.info",
+                    "size": 5,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "_searchQuery": {
+                    "type": "text",
+                    "label": "Station name",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "_searchCountry": {
+                    "type": "text",
+                    "label": "Country code",
+                    "help": "Optional, e.g. DE",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 2,
+                    "lg": 2,
+                    "xl": 2
+                },
+                "_searchPick": {
+                    "type": "selectSendTo",
+                    "label": "Search results",
+                    "command": "adminSearch",
+                    "jsonData": "{\"query\": \"${data._searchQuery}\", \"country\": \"${data._searchCountry}\"}",
+                    "alsoDependsOn": ["_searchQuery", "_searchCountry"],
+                    "noTranslation": true,
+                    "xs": 12,
+                    "sm": 8,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "_addStation": {
+                    "type": "sendTo",
+                    "label": "Add to favourites",
+                    "command": "adminAddStation",
+                    "jsonData": "{\"uuid\": \"${data._searchPick}\", \"stations\": ${JSON.stringify(data.stations || [])}}",
+                    "useNative": true,
+                    "showProcess": true,
+                    "variant": "contained",
+                    "disabled": "!data._searchPick",
+                    "xs": 12,
+                    "sm": 4,
+                    "md": 2,
+                    "lg": 2,
+                    "xl": 2
+                },
+                "_stationsHelp": {
+                    "type": "staticText",
+                    "text": "The added station appears in the table below; save the settings to keep it. Logos are copied into the file storage of the adapter.",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "stations": {
+                    "type": "table",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12,
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "attr": "enabled",
+                            "title": "Active",
+                            "width": "6%",
+                            "default": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "name",
+                            "title": "Station name",
+                            "width": "20%",
+                            "default": ""
+                        },
+                        {
+                            "type": "text",
+                            "attr": "url",
+                            "title": "Stream URL",
+                            "width": "34%",
+                            "default": ""
+                        },
+                        {
+                            "type": "text",
+                            "attr": "logo",
+                            "title": "Logo URL",
+                            "width": "25%",
+                            "default": ""
+                        },
+                        {
+                            "type": "text",
+                            "attr": "tags",
+                            "title": "Tags",
+                            "width": "15%",
+                            "default": ""
+                        }
+                    ]
+                }
+            }
+        },
+        "_playersTab": {
+            "type": "panel",
+            "label": "Players",
+            "items": {
+                "autoDiscover": {
+                    "type": "checkbox",
+                    "label": "Find satellites of ioBroker.assistant and panels of ioBroker.satellite-display by themselves",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "_playersHelp": {
+                    "type": "staticText",
+                    "text": "Add a row for any other player (Dune HD, a media player of another adapter) with the state that plays a URL. A row with the state of a found player changes it, a switched-off row hides it. Empty fields take the preset of the player; - means none.",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "targets": {
+                    "type": "table",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12,
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "attr": "enabled",
+                            "title": "Active",
+                            "width": "6%",
+                            "default": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "name",
+                            "title": "Player name",
+                            "width": "12%",
+                            "default": ""
+                        },
+                        {
+                            "type": "autocompleteSendTo",
+                            "attr": "urlState",
+                            "title": "Play URL state",
+                            "width": "25%",
+                            "command": "listUrlStates",
+                            "freeSolo": true,
+                            "default": ""
+                        },
+                        {
+                            "type": "select",
+                            "attr": "stream",
+                            "title": "Stream",
+                            "width": "12%",
+                            "default": "auto",
+                            "options": [
+                                { "label": "Automatic", "value": "auto" },
+                                { "label": "Station URL", "value": "direct" },
+                                { "label": "Proxy FLAC", "value": "flac" },
+                                { "label": "Proxy MP3", "value": "mp3" }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "attr": "stopState",
+                            "title": "Stop state",
+                            "width": "14%",
+                            "default": ""
+                        },
+                        {
+                            "type": "text",
+                            "attr": "stopValue",
+                            "title": "Stop value",
+                            "width": "7%",
+                            "default": ""
+                        },
+                        {
+                            "type": "text",
+                            "attr": "volumeState",
+                            "title": "Volume state",
+                            "width": "12%",
+                            "default": ""
+                        },
+                        {
+                            "type": "text",
+                            "attr": "titleState",
+                            "title": "Title state",
+                            "width": "12%",
+                            "default": ""
+                        }
+                    ]
+                }
+            }
+        },
+        "_settingsTab": {
+            "type": "panel",
+            "label": "Settings",
+            "items": {
+                "port": {
+                    "type": "port",
+                    "label": "HTTP port of the stream server",
+                    "min": 1,
+                    "max": 65535,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "bind": {
+                    "type": "ip",
+                    "label": "Listen on",
+                    "listenOnAllPorts": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "urlHost": {
+                    "type": "text",
+                    "label": "Address of this host for the players",
+                    "help": "Empty: the first network address of the host",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "readTitles": {
+                    "type": "checkbox",
+                    "label": "Read the titles of stations that a player plays by itself (a second connection to the station)",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "cacheLogos": {
+                    "type": "checkbox",
+                    "label": "Keep a copy of the station logos",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "catalogServer": {
+                    "type": "text",
+                    "label": "Server of radio-browser.info",
+                    "help": "Empty: a random mirror",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 6
+                },
+                "ffmpegPath": {
+                    "type": "text",
+                    "label": "Path of ffmpeg",
+                    "help": "Empty: the bundled ffmpeg",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 6
+                }
+            }
+        }
+    }
+}

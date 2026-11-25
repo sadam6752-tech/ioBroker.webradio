@@ -1,0 +1,203 @@
+const path = require('path');
+const http = require('http');
+const assert = require('assert/strict');
+const { spawnSync } = require('child_process');
+const ffmpegPath = require('ffmpeg-static');
+const { tests } = require('@iobroker/testing');
+const { startIcyServer } = require('./helpers/icy-server');
+
+const HTTP_PORT = 47196;
+const SAT = 'assistant.0.satellites.Kitchen';
+const GONE = 'assistant.0.satellites.Gone';
+const DUNE = 'dune-hd-remote.0';
+
+/**
+ * @param {string} url - URL
+ * @param {number} bytes - Read this many bytes, then close
+ * @returns {Promise<{status: number, body: Buffer}>} Response
+ */
+function fetchBytes(url, bytes) {
+    return new Promise((resolve, reject) => {
+        http.get(url, res => {
+            const parts = [];
+            let size = 0;
+            const done = () => resolve({ status: res.statusCode || 0, body: Buffer.concat(parts) });
+            res.on('data', d => {
+                parts.push(d);
+                size += d.length;
+                if (size >= bytes) {
+                    res.destroy();
+                    done();
+                }
+            });
+            res.on('end', done);
+        }).on('error', reject);
+    });
+}
+
+// Run integration tests - See https://github.com/ioBroker/testing for a detailed explanation and further options
+tests.integration(path.join(__dirname, '..'), {
+    defineAdditionalTests({ suite }) {
+        suite('Playing a test station on a fake satellite and a fake Dune HD', getHarness => {
+            let harness;
+            let radio;
+
+            before(async function () {
+                this.timeout(60_000);
+                harness = getHarness();
+                const mp3 = spawnSync(
+                    String(ffmpegPath),
+                    ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1', '-c:a', 'libmp3lame', '-f', 'mp3', 'pipe:1'],
+                    { maxBuffer: 10 * 1024 * 1024 },
+                ).stdout;
+                radio = await startIcyServer({ audio: mp3, metaInt: 2000, titles: ['Test Artist - Test Song'] });
+                // the objects ioBroker.assistant creates for a satellite with a media player, a room, and Dune HD
+                await harness.objects.setObjectAsync(SAT, { type: 'device', common: { name: 'Kitchen' }, native: { esphome: '10.0.0.5' } });
+                await harness.objects.setObjectAsync(GONE, { type: 'device', common: { name: 'Gone' }, native: {} });
+                for (const [id, type, role, extra] of [
+                    [`${SAT}.controls.player.url`, 'string', 'media.url', {}],
+                    [`${SAT}.controls.player.volume`, 'number', 'level.volume', { min: 0, max: 1 }],
+                    [`${SAT}.controls.media_title`, 'string', 'text', {}],
+                    [`${GONE}.controls.player.url`, 'string', 'media.url', {}],
+                    [`${DUNE}.media.playUrl`, 'string', 'media.url', {}],
+                    [`${DUNE}.control.stop`, 'boolean', 'button.stop', {}],
+                ]) {
+                    await harness.objects.setObjectAsync(id, {
+                        type: 'state',
+                        common: { name: id, type, role, read: true, write: true, ...extra },
+                        native: {},
+                    });
+                }
+                await harness.objects.setObjectAsync('enum.rooms.kitchen', {
+                    type: 'enum',
+                    common: { name: { en: 'Kitchen', de: 'Küche', ru: 'Кухня' }, members: [SAT] },
+                    native: {},
+                });
+                await harness.changeAdapterConfig('webradio', {
+                    native: {
+                        stations: [
+                            { enabled: true, name: 'Test Radio', url: `${radio.base}/station`, logo: '', tags: 'test' },
+                            { enabled: true, name: 'Playlist Radio', url: `${radio.base}/list.pls`, logo: '', tags: '' },
+                        ],
+                        targets: [{ enabled: true, name: 'Cinema', urlState: `${DUNE}.media.playUrl` }],
+                        port: HTTP_PORT,
+                        bind: '127.0.0.1',
+                        urlHost: '127.0.0.1',
+                        readTitles: true,
+                        cacheLogos: false,
+                    },
+                });
+                await harness.startAdapterAndWait(true);
+                // the satellite "Gone" was found at the start and is removed now (like a deleted satellite)
+                await harness.objects.delObjectAsync(`${GONE}.controls.player.url`);
+                harness.enableSendTo();
+            });
+
+            after(async function () {
+                this.timeout(30_000);
+                await radio?.close();
+                if (!harness) {
+                    return;
+                }
+                const stopped = harness.stopAdapter();
+                // js-controller 8 (dev builds from 2026-11-22) obeys sigKill only from the controller of its own host
+                const host = (await harness.objects.getObjectAsync('system.adapter.webradio.0'))?.common?.host;
+                if (host && harness.isAdapterRunning()) {
+                    await harness.states.setStateAsync('system.adapter.webradio.0.sigKill', {
+                        val: -1,
+                        ack: false,
+                        from: `system.host.${host}`,
+                    });
+                }
+                await stopped;
+            });
+
+            const state = async id => (await harness.states.getStateAsync(id))?.val;
+            const waitFor = async (id, test, ms = 10_000) => {
+                let val;
+                for (let i = 0; i < ms / 100; i++) {
+                    val = await state(id);
+                    if (test(val)) {
+                        return val;
+                    }
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert.fail(`${id} = ${JSON.stringify(val)}`);
+            };
+            const send = (command, message) =>
+                new Promise((resolve, reject) => {
+                    const timer = setTimeout(() => reject(new Error(`${command}: no answer`)), 15_000);
+                    harness.sendTo('webradio.0', command, message, res => {
+                        clearTimeout(timer);
+                        resolve(res);
+                    });
+                });
+
+            it('creates the stations and the players (rows and found satellites)', async function () {
+                this.timeout(20_000);
+                assert.equal(await state('webradio.0.stations.test_radio.url'), `${radio.base}/station`);
+                assert.equal(await state('webradio.0.info.connection'), true);
+                const kitchen = await harness.objects.getObjectAsync('webradio.0.targets.kitchen');
+                assert.equal(kitchen?.common?.desc, `${SAT}.controls.player.url`);
+                assert.ok(await harness.objects.getObjectAsync('webradio.0.targets.cinema.station'));
+                const station = await harness.objects.getObjectAsync('webradio.0.targets.kitchen.station');
+                assert.equal(station?.common?.states?.test_radio, 'Test Radio');
+            });
+
+            it('answers help with the commands', async function () {
+                this.timeout(20_000);
+                const res = await send('help', {});
+                assert.ok(res.help.includes('play {station'));
+                assert.ok(res.commands.some(c => c.command === 'play' && c.write === true));
+            });
+
+            it('plays a favourite in a room through the proxy: FLAC with the ICY title on the satellite', async function () {
+                this.timeout(30_000);
+                const res = await send('play', { station: 'test', room: 'кухня' });
+                assert.deepEqual(res, { ok: true, target: 'Kitchen', station: 'Test Radio' });
+                const url = await waitFor(`${SAT}.controls.player.url`, v => typeof v === 'string' && v.includes('/play/'));
+                assert.match(url, new RegExp(`^http://127\\.0\\.0\\.1:${HTTP_PORT}/play/kitchen\\.flac\\?`));
+                assert.equal(await state('webradio.0.targets.kitchen.playing'), true);
+                const stream = await fetchBytes(url, 4000);
+                assert.equal(stream.status, 200);
+                assert.equal(stream.body.subarray(0, 4).toString('latin1'), 'fLaC');
+                await waitFor('webradio.0.targets.kitchen.title', v => v === 'Test Artist - Test Song');
+                await waitFor(`${SAT}.controls.media_title`, v => v === 'Test Artist - Test Song');
+                const now = await send('now_playing', { room: 'Küche' });
+                assert.equal(now.targets[0].station, 'Test Radio');
+            });
+
+            it('stops the satellite with its stop value', async function () {
+                this.timeout(20_000);
+                const res = await send('stop', { target: 'kitchen' });
+                assert.deepEqual(res, { ok: true, stopped: ['kitchen'] });
+                await waitFor(`${SAT}.controls.player.url`, v => v === 'stop');
+                assert.equal(await state('webradio.0.targets.kitchen.playing'), false);
+            });
+
+            it('gives Dune HD the station URL and reads the titles by itself', async function () {
+                this.timeout(20_000);
+                await harness.states.setStateAsync('webradio.0.targets.cinema.station', { val: 'test_radio', ack: false });
+                await waitFor(`${DUNE}.media.playUrl`, v => v === `${radio.base}/station`);
+                await waitFor('webradio.0.targets.cinema.title', v => v === 'Test Artist - Test Song');
+                await harness.states.setStateAsync('webradio.0.targets.cinema.stop', { val: true, ack: false });
+                await waitFor(`${DUNE}.control.stop`, v => v === true);
+            });
+
+            it('asks back when the player is missing or the station is ambiguous', async function () {
+                this.timeout(20_000);
+                const noPlayer = await send('play', { station: 'test' });
+                assert.ok(noPlayer.ask && noPlayer.choices.includes('Kitchen'));
+                const twoStations = await send('play', { station: 'radio', target: 'kitchen' });
+                assert.ok(twoStations.ask && twoStations.choices.length === 2);
+            });
+
+            it('skips a player whose objects were deleted, without writing to it', async function () {
+                this.timeout(20_000);
+                const res = await send('play', { station: 'test', target: 'gone' });
+                assert.match(res.error, /does not exist/);
+                assert.equal(await harness.states.getStateAsync(`${GONE}.controls.player.url`), null);
+            });
+        });
+    },
+});

@@ -1,0 +1,156 @@
+{
+    "common": {
+        "name": "webradio",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "First version: favourite stations, search in radio-browser.info, players found automatically, stream proxy with ffmpeg and ICY titles, help for AI agents",
+                "de": "Erste Version: Lieblingssender, Suche in radio-browser.info, automatisch gefundene Abspielgeräte, Stream-Proxy mit ffmpeg und ICY-Titeln, Hilfe für KI-Agenten",
+                "ru": "Первая версия: избранные станции, поиск в radio-browser.info, автоматически найденные плееры, прокси потока с ffmpeg и названиями ICY, справка для ИИ-агентов",
+                "pt": "Primeira versão: estações favoritas, pesquisa no radio-browser.info, leitores encontrados automaticamente, proxy de stream com ffmpeg e títulos ICY, ajuda para agentes de IA",
+                "nl": "Eerste versie: favoriete zenders, zoeken in radio-browser.info, automatisch gevonden spelers, streamproxy met ffmpeg en ICY-titels, hulp voor AI-agenten",
+                "fr": "Première version : stations favorites, recherche dans radio-browser.info, lecteurs trouvés automatiquement, proxy de flux avec ffmpeg et titres ICY, aide pour les agents IA",
+                "it": "Prima versione: stazioni preferite, ricerca in radio-browser.info, lettori trovati automaticamente, proxy dello stream con ffmpeg e titoli ICY, aiuto per agenti IA",
+                "es": "Primera versión: emisoras favoritas, búsqueda en radio-browser.info, reproductores encontrados automáticamente, proxy de stream con ffmpeg y títulos ICY, ayuda para agentes de IA",
+                "pl": "Pierwsza wersja: ulubione stacje, wyszukiwanie w radio-browser.info, automatycznie znalezione odtwarzacze, proxy strumienia z ffmpeg i tytułami ICY, pomoc dla agentów AI",
+                "uk": "Перша версія: улюблені станції, пошук у radio-browser.info, автоматично знайдені плеєри, проксі потоку з ffmpeg і назвами ICY, довідка для ШІ-агентів",
+                "zh-cn": "第一个版本：收藏电台、在 radio-browser.info 中搜索、自动发现播放器、带 ffmpeg 和 ICY 标题的流代理、面向 AI 代理的帮助"
+            }
+        },
+        "titleLang": {
+            "en": "Web radio",
+            "de": "Webradio",
+            "ru": "Интернет-радио",
+            "pt": "Rádio web",
+            "nl": "Webradio",
+            "fr": "Radio web",
+            "it": "Radio web",
+            "es": "Radio web",
+            "pl": "Radio internetowe",
+            "uk": "Інтернет-радіо",
+            "zh-cn": "网络电台"
+        },
+        "desc": {
+            "en": "Web radio for ioBroker players: keep favourite stations, find new ones in radio-browser.info and play them on ioBroker.assistant satellites, satellite-display panels, Dune HD or any player that takes a URL",
+            "de": "Webradio für ioBroker-Player: Lieblingssender verwalten, neue in radio-browser.info finden und auf Satelliten von ioBroker.assistant, satellite-display-Panels, Dune HD oder jedem Player abspielen, der eine URL abspielt",
+            "ru": "Интернет-радио для плееров ioBroker: храните избранные станции, находите новые в radio-browser.info и включайте их на сателлитах ioBroker.assistant, панелях satellite-display, Dune HD или любом плеере, воспроизводящем URL",
+            "pt": "Rádio web para leitores ioBroker: guarde estações favoritas, encontre novas no radio-browser.info e reproduza-as em satélites do ioBroker.assistant, painéis satellite-display, Dune HD ou qualquer leitor que reproduza um URL",
+            "nl": "Webradio voor ioBroker-spelers: bewaar favoriete zenders, vind nieuwe in radio-browser.info en speel ze af op satellieten van ioBroker.assistant, satellite-display-panelen, Dune HD of elke speler die een URL afspeelt",
+            "fr": "Radio web pour les lecteurs ioBroker : gardez vos stations favorites, trouvez-en de nouvelles dans radio-browser.info et écoutez-les sur les satellites d'ioBroker.assistant, les panneaux satellite-display, un Dune HD ou tout lecteur qui lit une URL",
+            "it": "Radio web per i lettori ioBroker: conserva le stazioni preferite, trovane di nuove in radio-browser.info e riproducile sui satelliti di ioBroker.assistant, sui pannelli satellite-display, su un Dune HD o su qualsiasi lettore che riproduce un URL",
+            "es": "Radio web para reproductores de ioBroker: guarda emisoras favoritas, encuentra otras nuevas en radio-browser.info y reprodúcelas en satélites de ioBroker.assistant, paneles satellite-display, Dune HD o cualquier reproductor que reproduzca una URL",
+            "pl": "Radio internetowe dla odtwarzaczy ioBroker: przechowuj ulubione stacje, znajduj nowe w radio-browser.info i odtwarzaj je na satelitach ioBroker.assistant, panelach satellite-display, Dune HD lub dowolnym odtwarzaczu URL",
+            "uk": "Інтернет-радіо для плеєрів ioBroker: зберігайте улюблені станції, знаходьте нові в radio-browser.info і вмикайте їх на сателітах ioBroker.assistant, панелях satellite-display, Dune HD або будь-якому плеєрі, що відтворює URL",
+            "zh-cn": "面向 ioBroker 播放器的网络电台：保存收藏的电台，在 radio-browser.info 中查找新电台，并在 ioBroker.assistant 卫星、satellite-display 面板、Dune HD 或任何可播放 URL 的播放器上播放"
+        },
+        "authors": [
+            "sadam6752-tech <sadam6752@gmail.com>"
+        ],
+        "keywords": [
+            "webradio",
+            "internet radio",
+            "radio-browser",
+            "stream",
+            "esphome",
+            "satellite",
+            "ffmpeg",
+            "music",
+            "dune",
+            "media player"
+        ],
+        "licenseInformation": {
+            "type": "free",
+            "license": "MIT"
+        },
+        "platform": "Javascript/Node.js",
+        "icon": "webradio.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/sadam6752-tech/ioBroker.webradio/main/admin/webradio.png",
+        "readme": "https://github.com/sadam6752-tech/ioBroker.webradio/blob/main/README.md",
+        "loglevel": "info",
+        "tier": 3,
+        "mode": "daemon",
+        "type": "multimedia",
+        "compact": true,
+        "connectionType": "cloud",
+        "dataSource": "push",
+        "adminUI": {
+            "config": "json"
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=7.0.7"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=7.6.20"
+            }
+        ],
+        "messagebox": true,
+        "supportedMessages": {
+            "help": true
+        },
+        "declareUsedResources": true
+    },
+    "native": {
+        "stations": [],
+        "targets": [],
+        "autoDiscover": true,
+        "port": 8096,
+        "bind": "0.0.0.0",
+        "urlHost": "",
+        "readTitles": true,
+        "cacheLogos": true,
+        "catalogServer": "",
+        "ffmpegPath": ""
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": {
+                    "en": "Information",
+                    "de": "Informationen",
+                    "ru": "Информация",
+                    "pt": "Informação",
+                    "nl": "Informatie",
+                    "fr": "Informations",
+                    "it": "Informazioni",
+                    "es": "Información",
+                    "pl": "Informacje",
+                    "uk": "Інформація",
+                    "zh-cn": "信息"
+                }
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": {
+                    "en": "Stream server running",
+                    "de": "Stream-Server läuft",
+                    "ru": "Сервер потоков работает",
+                    "pt": "Servidor de streams em execução",
+                    "nl": "Streamserver actief",
+                    "fr": "Serveur de flux actif",
+                    "it": "Server degli stream attivo",
+                    "es": "Servidor de streams en marcha",
+                    "pl": "Serwer strumieni działa",
+                    "uk": "Сервер потоків працює",
+                    "zh-cn": "流服务器正在运行"
+                },
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}
