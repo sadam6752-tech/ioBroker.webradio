@@ -421,6 +421,32 @@ tests.integration(path.join(__dirname, '..'), {
                 await send('stop', { target: 'kitchen' });
             });
 
+            it('exports the favourites, and the admin adds the stations of a playlist to its table', async function () {
+                this.timeout(60_000);
+                const m3u = await send('export_stations', {});
+                assert.equal(m3u.format, 'm3u');
+                assert.match(m3u.text, new RegExp(`^#EXTM3U\n#EXTINF:-1[^\n]*,Test Radio\n${radio.base}/station\n`));
+                const json = await send('export_stations', { format: 'json' });
+                assert.equal(JSON.parse(json.text).length, 2);
+                const form = [{ enabled: true, name: 'A', url: 'http://a.example/', logo: '', tags: '' }];
+                const exported = await send('adminExport', { format: 'm3u', stations: form });
+                assert.equal(exported.native._transfer, '#EXTM3U\n#EXTINF:-1,A\nhttp://a.example/\n');
+                const added = await send('adminImport', {
+                    text: '[playlist]\nFile1=http://b.example/\nTitle1=B',
+                    stations: form,
+                });
+                assert.deepEqual(
+                    added.native.stations.map(r => r.name),
+                    ['A', 'B'],
+                );
+                assert.match(
+                    (await send('adminImport', { text: exported.native._transfer, stations: form })).error,
+                    /already/,
+                );
+                // the admin search without a name: the most played stations of a country (needs radio-browser.info)
+                assert.deepEqual(await send('adminSearch', { query: '', country: '' }), []);
+            });
+
             it('skips a player whose objects were deleted, without writing to it', async function () {
                 this.timeout(60_000);
                 const res = await send('play', { station: 'test', target: 'gone' });

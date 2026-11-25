@@ -3,7 +3,7 @@
     "Find a station in radio-browser.info": "在 radio-browser.info 中查找电台",
     "Station name": "电台名称",
     "Country code": "国家代码",
-    "Optional, e.g. DE": "可选，例如 DE",
+    "Optional, e.g. DE. Without a name: the most played stations of the country": "可选，例如 CN。不填名称：该国家最常收听的电台",
     "Search results": "搜索结果",
     "Add to favourites": "添加到收藏",
     "The added station appears in the table below; save the settings to keep it. Logos are copied into the file storage of the adapter.": "添加的电台会出现在下表中；保存设置即可保留。标志会复制到适配器的文件存储中。",
@@ -35,5 +35,11 @@
     "Server of radio-browser.info": "radio-browser.info 服务器",
     "Empty: a random mirror": "留空：随机镜像",
     "Path of ffmpeg": "ffmpeg 路径",
-    "Empty: the bundled ffmpeg": "留空：使用附带的 ffmpeg"
+    "Empty: the bundled ffmpeg": "留空：使用附带的 ffmpeg",
+    "Import and export": "导入和导出",
+    "Export format": "导出格式",
+    "Export the favourites into the field": "将收藏导出到文本框",
+    "Add the stations of the field to the table": "将文本框中的电台添加到表格",
+    "M3U, PLS, JSON or one URL per line": "M3U、PLS、JSON 或每行一个 URL",
+    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "粘贴播放列表并添加其中的电台，或导出表格并复制文本。表格中已有相同 URL 的电台会被跳过。保存设置以保留更改。"
 }

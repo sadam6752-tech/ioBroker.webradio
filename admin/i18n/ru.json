@@ -3,7 +3,7 @@
     "Find a station in radio-browser.info": "Найти станцию в radio-browser.info",
     "Station name": "Название станции",
     "Country code": "Код страны",
-    "Optional, e.g. DE": "Необязательно, например DE",
+    "Optional, e.g. DE. Without a name: the most played stations of the country": "Необязательно, напр. RU. Без названия: самые популярные станции страны",
     "Search results": "Результаты поиска",
     "Add to favourites": "Добавить в избранное",
     "The added station appears in the table below; save the settings to keep it. Logos are copied into the file storage of the adapter.": "Добавленная станция появится в таблице ниже; сохраните настройки, чтобы она осталась. Логотипы копируются в файловое хранилище адаптера.",
@@ -35,5 +35,11 @@
     "Server of radio-browser.info": "Сервер radio-browser.info",
     "Empty: a random mirror": "Пусто: случайное зеркало",
     "Path of ffmpeg": "Путь к ffmpeg",
-    "Empty: the bundled ffmpeg": "Пусто: встроенный ffmpeg"
+    "Empty: the bundled ffmpeg": "Пусто: встроенный ffmpeg",
+    "Import and export": "Импорт и экспорт",
+    "Export format": "Формат экспорта",
+    "Export the favourites into the field": "Экспортировать избранное в поле",
+    "Add the stations of the field to the table": "Добавить станции из поля в таблицу",
+    "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON или по одному URL в строке",
+    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Вставьте плейлист и добавьте его станции или экспортируйте таблицу и скопируйте текст. Станции с URL, который уже есть в таблице, пропускаются. Сохраните настройки, чтобы изменения остались."
 }

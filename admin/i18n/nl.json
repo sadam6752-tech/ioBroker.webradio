@@ -3,7 +3,7 @@
     "Find a station in radio-browser.info": "Een zender zoeken in radio-browser.info",
     "Station name": "Zendernaam",
     "Country code": "Landcode",
-    "Optional, e.g. DE": "Optioneel, bijv. DE",
+    "Optional, e.g. DE. Without a name: the most played stations of the country": "Optioneel, bijv. NL. Zonder naam: de meest beluisterde zenders van het land",
     "Search results": "Zoekresultaten",
     "Add to favourites": "Aan favorieten toevoegen",
     "The added station appears in the table below; save the settings to keep it. Logos are copied into the file storage of the adapter.": "De toegevoegde zender verschijnt in de tabel hieronder; sla de instellingen op om hem te bewaren. Logo’s worden naar de bestandsopslag van de adapter gekopieerd.",
@@ -35,5 +35,11 @@
     "Server of radio-browser.info": "Server van radio-browser.info",
     "Empty: a random mirror": "Leeg: een willekeurige mirror",
     "Path of ffmpeg": "Pad van ffmpeg",
-    "Empty: the bundled ffmpeg": "Leeg: de meegeleverde ffmpeg"
+    "Empty: the bundled ffmpeg": "Leeg: de meegeleverde ffmpeg",
+    "Import and export": "Importeren en exporteren",
+    "Export format": "Exportformaat",
+    "Export the favourites into the field": "Favorieten naar het veld exporteren",
+    "Add the stations of the field to the table": "Zenders uit het veld aan de tabel toevoegen",
+    "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON of één URL per regel",
+    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Plak een afspeellijst en voeg de zenders toe, of exporteer de tabel en kopieer de tekst. Zenders met een URL die al in de tabel staat, worden overgeslagen. Sla de instellingen op om de wijziging te bewaren."
 }

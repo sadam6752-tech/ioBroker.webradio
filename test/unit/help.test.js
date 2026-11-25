@@ -36,7 +36,7 @@ describe('help', () => {
         const writing = COMMANDS.filter(c => c.write)
             .map(c => c.command)
             .sort();
-        assert.deepEqual(writing, ['next', 'play', 'prev', 'resume', 'sleep', 'stop']);
+        assert.deepEqual(writing, ['import_stations', 'next', 'play', 'prev', 'resume', 'sleep', 'stop']);
     });
 
     it('gives a copy, so a caller cannot change the list', () => {

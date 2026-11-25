@@ -29,7 +29,7 @@
                 "_searchCountry": {
                     "type": "text",
                     "label": "Country code",
-                    "help": "Optional, e.g. DE",
+                    "help": "Optional, e.g. DE. Without a name: the most played stations of the country",
                     "xs": 12,
                     "sm": 6,
                     "md": 2,
@@ -119,6 +119,88 @@
                             "default": ""
                         }
                     ]
+                },
+                "_transferHeader": {
+                    "type": "header",
+                    "text": "Import and export",
+                    "size": 5,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "_transferFormat": {
+                    "type": "select",
+                    "label": "Export format",
+                    "newLine": true,
+                    "options": [
+                        {
+                            "label": "M3U",
+                            "value": "m3u"
+                        },
+                        {
+                            "label": "JSON",
+                            "value": "json"
+                        }
+                    ],
+                    "noTranslation": true,
+                    "default": "m3u",
+                    "xs": 12,
+                    "sm": 4,
+                    "md": 2,
+                    "lg": 2,
+                    "xl": 2
+                },
+                "_exportStations": {
+                    "type": "sendTo",
+                    "label": "Export the favourites into the field",
+                    "command": "adminExport",
+                    "jsonData": "{\"format\": \"${data._transferFormat}\", \"stations\": ${JSON.stringify(data.stations || [])}}",
+                    "useNative": true,
+                    "variant": "outlined",
+                    "xs": 12,
+                    "sm": 4,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "_importStations": {
+                    "type": "sendTo",
+                    "label": "Add the stations of the field to the table",
+                    "command": "adminImport",
+                    "jsonData": "{\"text\": ${JSON.stringify(data._transfer || \"\")}, \"stations\": ${JSON.stringify(data.stations || [])}}",
+                    "useNative": true,
+                    "variant": "contained",
+                    "disabled": "!data._transfer",
+                    "xs": 12,
+                    "sm": 4,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "_transfer": {
+                    "type": "text",
+                    "label": "M3U, PLS, JSON or one URL per line",
+                    "minRows": 4,
+                    "maxRows": 12,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "_transferHelp": {
+                    "type": "staticText",
+                    "text": "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
                 }
             }
         },
@@ -184,10 +266,22 @@
                             "width": "12%",
                             "default": "auto",
                             "options": [
-                                { "label": "Automatic", "value": "auto" },
-                                { "label": "Station URL", "value": "direct" },
-                                { "label": "Proxy FLAC", "value": "flac" },
-                                { "label": "Proxy MP3", "value": "mp3" }
+                                {
+                                    "label": "Automatic",
+                                    "value": "auto"
+                                },
+                                {
+                                    "label": "Station URL",
+                                    "value": "direct"
+                                },
+                                {
+                                    "label": "Proxy FLAC",
+                                    "value": "flac"
+                                },
+                                {
+                                    "label": "Proxy MP3",
+                                    "value": "mp3"
+                                }
                             ]
                         },
                         {

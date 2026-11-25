@@ -3,7 +3,7 @@
     "Find a station in radio-browser.info": "Cerca una stazione in radio-browser.info",
     "Station name": "Nome della stazione",
     "Country code": "Codice del paese",
-    "Optional, e.g. DE": "Facoltativo, ad es. DE",
+    "Optional, e.g. DE. Without a name: the most played stations of the country": "Facoltativo, ad es. IT. Senza nome: le stazioni più ascoltate del paese",
     "Search results": "Risultati della ricerca",
     "Add to favourites": "Aggiungi ai preferiti",
     "The added station appears in the table below; save the settings to keep it. Logos are copied into the file storage of the adapter.": "La stazione aggiunta compare nella tabella sottostante; salva le impostazioni per mantenerla. I loghi vengono copiati nell’archivio file dell’adattatore.",
@@ -35,5 +35,11 @@
     "Server of radio-browser.info": "Server di radio-browser.info",
     "Empty: a random mirror": "Vuoto: un mirror casuale",
     "Path of ffmpeg": "Percorso di ffmpeg",
-    "Empty: the bundled ffmpeg": "Vuoto: il ffmpeg incluso"
+    "Empty: the bundled ffmpeg": "Vuoto: il ffmpeg incluso",
+    "Import and export": "Importa ed esporta",
+    "Export format": "Formato di esportazione",
+    "Export the favourites into the field": "Esporta le preferite nel campo",
+    "Add the stations of the field to the table": "Aggiungi le stazioni del campo alla tabella",
+    "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON o un URL per riga",
+    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Incolla una playlist e aggiungi le sue stazioni, oppure esporta la tabella e copia il testo. Le stazioni con un URL già presente nella tabella vengono saltate. Salva le impostazioni per mantenere la modifica."
 }

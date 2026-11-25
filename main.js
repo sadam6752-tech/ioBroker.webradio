@@ -16,6 +16,7 @@ const { RadioBrowser, searchParams, sentQuery } = require('./lib/radio-browser')
 const { Channel, StreamServer, SourceReader, playableUrl } = require('./lib/proxy');
 const { downloadLogo, shrinkLogo, MIME } = require('./lib/logos');
 const { rememberStation, resumeStation, stepStation, percentOf, SleepTimer } = require('./lib/control');
+const { exportStations, importStations } = require('./lib/transfer');
 const { stationList, targetList } = require('./lib/lists');
 const {
     normalizeStations,
@@ -1271,6 +1272,43 @@ class Webradio extends utils.Adapter {
                     await this.stopTarget(r);
                 }
                 answer({ ok: true, stopped });
+            } else if (obj.command === 'export_stations') {
+                const format = msg.format === 'json' ? 'json' : 'm3u';
+                answer({ format, text: exportStations(this.config.stations || [], format) });
+            } else if (obj.command === 'import_stations') {
+                const res = importStations(String(msg.text ?? ''), this.config.stations || []);
+                answer({
+                    ok: true,
+                    format: res.format,
+                    added: res.added,
+                    skipped: res.skipped,
+                    restart: res.added > 0,
+                });
+                if (res.added) {
+                    this.log.info(`Import: ${res.added} station(s) added (${res.format}), the adapter restarts`);
+                    // the settings change, js-controller restarts the instance with the new favourites
+                    await this.extendForeignObjectAsync(`system.adapter.${this.namespace}`, {
+                        native: { stations: res.rows },
+                    });
+                }
+            } else if (obj.command === 'adminExport') {
+                // admin only: the favourites of the form as text in the transfer field
+                const rows = Array.isArray(msg.stations) ? msg.stations : this.config.stations || [];
+                const format = msg.format === 'json' ? 'json' : 'm3u';
+                answer({ native: { _transfer: exportStations(rows, format) } });
+            } else if (obj.command === 'adminImport') {
+                // admin only: adds the stations of the transfer field to the table of the form
+                const rows = Array.isArray(msg.stations) ? msg.stations : this.config.stations || [];
+                const res = importStations(String(msg.text ?? ''), rows);
+                answer(
+                    res.added
+                        ? { native: { stations: res.rows } }
+                        : {
+                              error: res.skipped
+                                  ? 'All stations are in the list already'
+                                  : 'No stations found in the text',
+                          },
+                );
             } else if (obj.command === 'adminSearch') {
                 // admin only: the choice list of the search in the settings
                 answer(await this.adminSearch(msg));
@@ -1294,10 +1332,12 @@ class Webradio extends utils.Adapter {
      */
     async adminSearch(msg) {
         const query = String(msg.query ?? '').trim();
-        if (query.length < 2) {
+        const country = String(msg.country ?? '').trim();
+        // a name, or only a country: then the most played stations of that country
+        if (query.length < 2 && country.length < 2) {
             return [];
         }
-        const found = await this.catalog.search({ query, country: msg.country, limit: 30 });
+        const found = await this.catalog.search({ query, country, limit: query ? 30 : 50 });
         return found.map(s => ({
             label: [s.name, s.countrycode, [s.codec, s.bitrate ? `${s.bitrate}k` : ''].filter(Boolean).join(' ')]
                 .filter(Boolean)

@@ -3,7 +3,7 @@
     "Find a station in radio-browser.info": "Find a station in radio-browser.info",
     "Station name": "Station name",
     "Country code": "Country code",
-    "Optional, e.g. DE": "Optional, e.g. DE",
+    "Optional, e.g. DE. Without a name: the most played stations of the country": "Optional, e.g. DE. Without a name: the most played stations of the country",
     "Search results": "Search results",
     "Add to favourites": "Add to favourites",
     "The added station appears in the table below; save the settings to keep it. Logos are copied into the file storage of the adapter.": "The added station appears in the table below; save the settings to keep it. Logos are copied into the file storage of the adapter.",
@@ -35,5 +35,11 @@
     "Server of radio-browser.info": "Server of radio-browser.info",
     "Empty: a random mirror": "Empty: a random mirror",
     "Path of ffmpeg": "Path of ffmpeg",
-    "Empty: the bundled ffmpeg": "Empty: the bundled ffmpeg"
+    "Empty: the bundled ffmpeg": "Empty: the bundled ffmpeg",
+    "Import and export": "Import and export",
+    "Export format": "Export format",
+    "Export the favourites into the field": "Export the favourites into the field",
+    "Add the stations of the field to the table": "Add the stations of the field to the table",
+    "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON or one URL per line",
+    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change."
 }
