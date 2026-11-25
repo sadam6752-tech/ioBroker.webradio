@@ -423,6 +423,48 @@ tests.integration(path.join(__dirname, '..'), {
                 await send('stop', { target: 'kitchen' });
             });
 
+            it('wake-up radio: refuses wrong values, rings in the next minute, the volume rises from 0', async function () {
+                this.timeout(120_000);
+                const VOLUME = `${SAT}.controls.player.volume`;
+                assert.match((await send('alarm', { target: 'kitchen', time: '25:00' })).error, /no time/);
+                assert.match((await send('alarm', { target: 'kitchen', days: 'someday' })).error, /weekdays/);
+                assert.match(
+                    (await send('alarm', { target: 'kitchen', station: 'nothing like it' })).error,
+                    /no single/,
+                );
+                const off = await send('alarm', { target: 'kitchen' });
+                assert.deepEqual([off.ok, off.alarm.time, off.alarm.next], [true, '', '']);
+                await send('stop', { target: 'kitchen' });
+                await harness.states.setStateAsync(VOLUME, { val: 0.9, ack: true });
+                // the next full minute (local time), at least 5 s away
+                const at = new Date(Date.now() + 65_000);
+                const time = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+                const res = await send('alarm', {
+                    target: 'kitchen',
+                    time,
+                    days: '',
+                    station: 'Playlist Radio',
+                    volume: 60,
+                    fade: 0.1,
+                });
+                assert.equal(res.alarm.time, time);
+                assert.equal(res.alarm.station, 'playlist_radio');
+                assert.equal(res.alarm.volume, 60);
+                const next = Date.parse(res.alarm.next);
+                assert.ok(next > Date.now() && next < Date.now() + 70_000, res.alarm.next);
+                assert.equal(await state('webradio.0.targets.kitchen.alarmNext'), res.alarm.next);
+                await waitFor('webradio.0.targets.kitchen.playing', v => v === true, 80_000);
+                assert.equal(await state('webradio.0.targets.kitchen.station'), 'playlist_radio');
+                assert.ok(Number(await state(VOLUME)) < 0.6, 'starts low');
+                await waitFor(VOLUME, v => v === 0.6, 15_000);
+                await waitFor('webradio.0.targets.kitchen.volume', v => v === 60, 5_000);
+                const after = Date.parse(String(await state('webradio.0.targets.kitchen.alarmNext')));
+                assert.ok(after > Date.now() + 23 * 3600_000, 'tomorrow again');
+                await send('alarm', { target: 'kitchen', time: '' });
+                assert.equal(await state('webradio.0.targets.kitchen.alarmNext'), '');
+                await send('stop', { target: 'kitchen' });
+            });
+
             it('checks the favourites: by message and by the button', async function () {
                 this.timeout(60_000);
                 const res = await send('check_stations', {});

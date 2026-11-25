@@ -27,6 +27,7 @@ const {
 } = require('./lib/control');
 const { exportStations, importStations } = require('./lib/transfer');
 const { CoverFinder } = require('./lib/cover');
+const { normalizeTime, parseDays, nextAlarm, Ramp } = require('./lib/alarm');
 const { stationList, targetList } = require('./lib/lists');
 const {
     normalizeStations,
@@ -60,6 +61,8 @@ const {
  * @property {{min?: unknown, max?: unknown} | null} volumeCommon - Range of the volume state (read once)
  * @property {SleepTimer} sleep - Sleep timer
  * @property {number | null} fadeFrom - Volume (%) before the sleep timer began to fade it, -1 = cannot fade, null = no fade
+ * @property {Ramp} ramp - Fade-in of the wake-up radio
+ * @property {unknown} alarmTimer - Timer of the next wake-up
  */
 
 /** Port of the stream server, next to airplay-receiver (8095) */
@@ -225,6 +228,8 @@ class Webradio extends utils.Adapter {
                     onEnd: () => void this.sleepEnd(r),
                 }),
                 fadeFrom: null,
+                ramp: new Ramp(this.timers),
+                alarmTimer: null,
             };
             if (!way.direct) {
                 if (!ffmpegPath) {
@@ -272,6 +277,9 @@ class Webradio extends utils.Adapter {
             }; stream server on port ${this.httpPort}`,
         );
         await this.setState('info.connection', { val: true, ack: true });
+        for (const r of this.running.values()) {
+            await this.scheduleAlarm(r);
+        }
         void this.cacheLogos(this.stations);
         if (this.config.checkStations !== false) {
             this.scheduleCheck(FIRST_CHECK_DELAY_MS);
@@ -438,6 +446,12 @@ class Webradio extends utils.Adapter {
             ['sleepLeft', 'number', 'value', false, 0, { min: 0, unit: 'min' }],
             ['lastStation', 'string', 'json', false, '', {}],
             ['history', 'string', 'json', false, '[]', {}],
+            ['alarmTime', 'string', 'text', true, '', {}],
+            ['alarmDays', 'string', 'text', true, '', {}],
+            ['alarmStation', 'string', 'text', true, '', { states: choice }],
+            ['alarmVolume', 'number', 'level.volume', true, 30, { min: 0, max: 100, unit: '%' }],
+            ['alarmFade', 'number', 'level', true, 5, { min: 0, max: 60, unit: 'min' }],
+            ['alarmNext', 'string', 'date', false, '', {}],
         ];
         for (const t of targets) {
             await this.extendObject(`targets.${t.id}`, {
@@ -665,6 +679,7 @@ class Webradio extends utils.Adapter {
             return `the player ${r.t.name} does not exist any more (${r.t.urlState})`;
         }
         await this.cancelSleep(r);
+        r.ramp.cancel();
         this.stopReaders(r);
         r.station = station;
         r.title = '';
@@ -754,6 +769,7 @@ class Webradio extends utils.Adapter {
             await this.writeTarget(r.t.stopState, r.t.stopValue);
             await this.writeTarget(r.t.titleState, '', true);
         }
+        r.ramp.cancel();
         await this.cancelSleep(r);
     }
 
@@ -918,6 +934,112 @@ class Webradio extends utils.Adapter {
             if (after[0] === entry) {
                 await this.setState(id, { val: JSON.stringify(after), ack: true });
             }
+        }
+    }
+
+    /**
+     * Writes one alarm setting of a player (normalized, ack) and plans the alarm again.
+     *
+     * @param {Running} r - Target
+     * @param {string} key - alarmTime, alarmDays, alarmStation, alarmVolume or alarmFade
+     * @param {unknown} value - Value
+     * @returns {Promise<string>} Error text, empty = done
+     */
+    async setAlarmState(r, key, value) {
+        const id = `targets.${r.t.id}.${key}`;
+        /** @type {ioBroker.StateValue} */
+        let val;
+        if (key === 'alarmTime') {
+            val = normalizeTime(value);
+            if (!val && String(value ?? '').trim()) {
+                await this.setState(id, { val: '', ack: true });
+                await this.scheduleAlarm(r);
+                return `"${value}" is no time (HH:MM); the alarm is off`;
+            }
+        } else if (key === 'alarmDays') {
+            val = String(value ?? '').trim();
+            if (!parseDays(val)) {
+                return `"${val}" are no weekdays (e.g. 1-5, mo,we,fr; empty = every day)`;
+            }
+        } else if (key === 'alarmStation') {
+            val = String(value ?? '').trim();
+            const hits = val ? findByName(this.stations, val) : [];
+            if (val && hits.length !== 1) {
+                return `no single favourite station matches "${val}"`;
+            }
+            val = hits[0]?.id || '';
+        } else if (key === 'alarmVolume') {
+            val = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+        } else {
+            val = Math.max(0, Math.min(60, Number(value) || 0));
+        }
+        await this.setState(id, { val, ack: true });
+        await this.scheduleAlarm(r);
+        return '';
+    }
+
+    /**
+     * Plans the next wake-up of a player from its alarm states (alarmNext shows it).
+     *
+     * @param {Running} r - Target
+     */
+    async scheduleAlarm(r) {
+        if (r.alarmTimer) {
+            this.clearTimeout(/** @type {ioBroker.Timeout} */ (r.alarmTimer));
+        }
+        r.alarmTimer = null;
+        const base = `targets.${r.t.id}`;
+        const time = String((await this.getStateAsync(`${base}.alarmTime`))?.val || '');
+        const days = parseDays((await this.getStateAsync(`${base}.alarmDays`))?.val) || [];
+        const next = time ? nextAlarm(new Date(), time, days) : null;
+        await this.setState(`${base}.alarmNext`, { val: next ? next.toISOString() : '', ack: true });
+        if (!next || !this.http) {
+            return;
+        }
+        r.alarmTimer = this.setTimeout(
+            () => {
+                r.alarmTimer = null;
+                void this.wakeUp(r).finally(() => this.scheduleAlarm(r));
+            },
+            Math.max(1000, next.getTime() - Date.now()),
+        );
+    }
+
+    /**
+     * The alarm rings: play the alarm station (else the last one) with the volume rising from 0.
+     *
+     * @param {Running} r - Target
+     */
+    async wakeUp(r) {
+        const base = `targets.${r.t.id}`;
+        const chosen = String((await this.getStateAsync(`${base}.alarmStation`))?.val || '');
+        const station = this.stations.find(s => s.id === chosen) || (await this.lastStationOf(r));
+        if (!station) {
+            this.log.warn(`${r.t.name}: wake-up radio without a station: add favourites in the settings`);
+            return;
+        }
+        const volume = Number((await this.getStateAsync(`${base}.alarmVolume`))?.val ?? 30);
+        const fade = Number((await this.getStateAsync(`${base}.alarmFade`))?.val ?? 5);
+        this.log.info(`${r.t.name}: wake-up radio, ${station.name}`);
+        const ramp = r.t.volumeState && fade > 0;
+        if (r.t.volumeState) {
+            await this.setVolume(r, ramp ? 0 : volume);
+        }
+        const error = await this.playStation(r, station);
+        if (error) {
+            this.log.warn(`${r.t.name}: wake-up radio: ${error}`);
+            return;
+        }
+        if (ramp) {
+            r.ramp.start(
+                0,
+                volume,
+                fade * 60_000,
+                level => void this.setVolume(r, level),
+                () => void this.setState(`${base}.volume`, { val: volume, ack: true }),
+            );
+        } else if (r.t.volumeState) {
+            await this.setState(`${base}.volume`, { val: volume, ack: true });
         }
     }
 
@@ -1139,7 +1261,13 @@ class Webradio extends utils.Adapter {
             }
         } else if (key === 'stop' && state.val) {
             await this.stopTarget(r);
+        } else if (key.startsWith('alarm') && key !== 'alarmNext') {
+            const error = await this.setAlarmState(r, key, state.val);
+            if (error) {
+                this.log.warn(`${r.t.name}: ${error}`);
+            }
         } else if (key === 'volume') {
+            r.ramp.cancel();
             const v = Math.max(0, Math.min(100, Number(state.val) || 0));
             await this.setVolume(r, v);
             await this.setState(id, { val: v, ack: true });
@@ -1343,6 +1471,42 @@ class Webradio extends utils.Adapter {
                 } else {
                     answer({ targets: sel.targets.map(r => this.describe(r, rooms)) });
                 }
+            } else if (obj.command === 'alarm') {
+                const sel = await this.resolveTargets(msg, false);
+                if ('error' in sel) {
+                    answer(sel);
+                    return;
+                }
+                const r = sel.targets[0];
+                for (const [field, key] of [
+                    ['time', 'alarmTime'],
+                    ['days', 'alarmDays'],
+                    ['station', 'alarmStation'],
+                    ['volume', 'alarmVolume'],
+                    ['fade', 'alarmFade'],
+                ]) {
+                    if (msg[field] !== undefined) {
+                        const error = await this.setAlarmState(r, key, msg[field]);
+                        if (error) {
+                            answer({ error });
+                            return;
+                        }
+                    }
+                }
+                const base = `targets.${r.t.id}`;
+                const read = async key => (await this.getStateAsync(`${base}.${key}`))?.val;
+                answer({
+                    ok: true,
+                    target: r.t.name,
+                    alarm: {
+                        time: (await read('alarmTime')) || '',
+                        days: (await read('alarmDays')) || '',
+                        station: (await read('alarmStation')) || '',
+                        volume: await read('alarmVolume'),
+                        fade: await read('alarmFade'),
+                        next: (await read('alarmNext')) || '',
+                    },
+                });
             } else if (obj.command === 'check_stations') {
                 answer({ stations: await this.checkStations() });
             } else if (obj.command === 'history') {
@@ -1543,6 +1707,7 @@ class Webradio extends utils.Adapter {
             this.http = null;
             for (const r of this.running.values()) {
                 r.sleep.cancel();
+                r.ramp.cancel();
                 this.stopReaders(r);
                 // a proxied stream ends with the adapter: stop that player; a player with a direct URL keeps playing
                 if (r.channel) {
