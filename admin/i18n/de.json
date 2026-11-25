@@ -42,5 +42,6 @@
     "Add the stations of the field to the table": "Sender aus dem Feld zur Tabelle hinzufügen",
     "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON oder eine URL pro Zeile",
     "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Eine Playlist einfügen und ihre Sender hinzufügen, oder die Tabelle exportieren und den Text kopieren. Sender mit einer URL, die schon in der Tabelle steht, werden übersprungen. Die Einstellungen speichern, um die Änderung zu behalten.",
-    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Cover des laufenden Titels anzeigen (in der iTunes Search API gesucht: Interpret und Titel gehen an Apple)"
+    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Cover des laufenden Titels anzeigen (in der iTunes Search API gesucht: Interpret und Titel gehen an Apple)",
+    "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Die Lieblingssender einmal am Tag prüfen; ein Sender aus radio-browser.info, der nicht antwortet, bekommt von dort seine neue URL"
 }

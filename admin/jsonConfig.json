@@ -381,6 +381,16 @@
                     "lg": 12,
                     "xl": 12
                 },
+                "checkStations": {
+                    "type": "checkbox",
+                    "label": "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
                 "catalogServer": {
                     "type": "text",
                     "label": "Server of radio-browser.info",

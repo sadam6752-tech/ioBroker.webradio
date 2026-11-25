@@ -42,5 +42,6 @@
     "Add the stations of the field to the table": "Add the stations of the field to the table",
     "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON or one URL per line",
     "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.",
-    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)"
+    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)",
+    "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there"
 }

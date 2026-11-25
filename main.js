@@ -13,7 +13,8 @@ const { bindOf } = require('./lib/resources');
 const { listenOnFreePort } = require('./lib/port');
 const { STORAGE, LOGO_DIR, logoPath, normalizeLogoFile, migrateOldLogos } = require('./lib/storage');
 const { RadioBrowser, searchParams, sentQuery } = require('./lib/radio-browser');
-const { Channel, StreamServer, SourceReader, playableUrl } = require('./lib/proxy');
+const { Channel, StreamServer, SourceReader, playableUrl, probeUrl } = require('./lib/proxy');
+const { checkStation, urlInUse, CHECK_INTERVAL_HOURS, FIRST_CHECK_DELAY_MS } = require('./lib/check');
 const { downloadLogo, shrinkLogo, MIME } = require('./lib/logos');
 const {
     rememberStation,
@@ -104,6 +105,10 @@ class Webradio extends utils.Adapter {
         this.catalog = new RadioBrowser({ userAgent: 'ioBroker.webradio' });
         /** @type {CoverFinder | null} */
         this.covers = null;
+        /** @type {Map<string, string>} station id → URL in the settings (before a refresh) */
+        this.configUrls = new Map();
+        /** @type {Promise<Array<Record<string, unknown>>> | null} the check that runs */
+        this.checking = null;
         /** @type {() => void} */
         this.markReady = () => undefined;
         this.ready = new Promise(resolve => (this.markReady = () => resolve(undefined)));
@@ -244,7 +249,20 @@ class Webradio extends utils.Adapter {
             this.running.set(t.id, r);
             this.byUrlState.set(t.urlState, r);
         }
+        await this.extendObject('info.checkStations', {
+            type: 'state',
+            common: {
+                name: NAMES.checkStations,
+                type: 'boolean',
+                role: 'button',
+                read: false,
+                write: true,
+                def: false,
+            },
+            native: {},
+        });
         await this.subscribeStatesAsync('targets.*');
+        await this.subscribeStatesAsync('info.checkStations');
         for (const id of this.byUrlState.keys()) {
             await this.subscribeForeignStatesAsync(id);
         }
@@ -255,6 +273,9 @@ class Webradio extends utils.Adapter {
         );
         await this.setState('info.connection', { val: true, ack: true });
         void this.cacheLogos(this.stations);
+        if (this.config.checkStations !== false) {
+            this.scheduleCheck(FIRST_CHECK_DELAY_MS);
+        }
     }
 
     /**
@@ -357,11 +378,24 @@ class Webradio extends utils.Adapter {
         await this.migrateLogos();
         await this.extendObject('stations', { type: 'folder', common: { name: NAMES.stations }, native: {} });
         for (const s of stations) {
+            const channel = await this.getObjectAsync(`stations.${s.id}`);
+            this.configUrls.set(s.id, s.url);
+            s.url = urlInUse(s.url, /** @type {Record<string, unknown>} */ (channel?.native || {}));
             await this.extendObject(`stations.${s.id}`, {
                 type: 'channel',
                 common: { name: s.name },
                 native: { uuid: s.uuid },
             });
+            for (const [key, type, role, def] of /** @type {const} */ ([
+                ['online', 'boolean', 'indicator.reachable', null],
+                ['checked', 'number', 'date', 0],
+            ])) {
+                await this.extendObject(`stations.${s.id}.${key}`, {
+                    type: 'state',
+                    common: { name: NAMES[key], type, role, read: true, write: false, def },
+                    native: {},
+                });
+            }
             for (const [key, role, val] of [
                 ['name', 'text', s.name],
                 ['url', 'text.url', s.url],
@@ -888,6 +922,71 @@ class Webradio extends utils.Adapter {
     }
 
     /**
+     * @param {number} ms - Delay of the next check of the favourites
+     */
+    scheduleCheck(ms) {
+        this.setTimeout(async () => {
+            if (!this.http) {
+                return;
+            }
+            await this.checkStations();
+            this.scheduleCheck(CHECK_INTERVAL_HOURS * 3600_000);
+        }, ms);
+    }
+
+    /**
+     * Checks every favourite once (one at a time); a running check is joined, not started twice.
+     *
+     * @returns {Promise<Array<Record<string, unknown>>>} Result per station
+     */
+    checkStations() {
+        if (!this.checking) {
+            this.checking = this.runCheck().finally(() => (this.checking = null));
+        }
+        return this.checking;
+    }
+
+    /**
+     * @returns {Promise<Array<Record<string, unknown>>>} Result per station
+     */
+    async runCheck() {
+        const out = [];
+        let offline = 0;
+        for (const s of [...this.stations]) {
+            if (!this.http) {
+                break;
+            }
+            const res = await checkStation(s, {
+                probe: url => probeUrl(url, this.userAgent),
+                byUuid: async uuid => await this.catalog.byUuid(uuid),
+            });
+            await this.setState(`stations.${s.id}.online`, { val: res.online, ack: true });
+            await this.setState(`stations.${s.id}.checked`, { val: Date.now(), ack: true });
+            if (res.refreshed) {
+                this.log.info(`${s.name}: did not answer; radio-browser.info has a new URL that does: ${res.url}`);
+                s.url = res.url;
+                await this.extendObject(`stations.${s.id}`, {
+                    native: { refreshedUrl: res.url, configUrl: this.configUrls.get(s.id) || '' },
+                });
+                await this.setState(`stations.${s.id}.url`, { val: res.url, ack: true });
+            } else if (!res.online) {
+                offline++;
+                this.log.info(`${s.name}: does not answer (${res.error})`);
+            }
+            out.push({
+                id: s.id,
+                name: s.name,
+                online: res.online,
+                url: res.url,
+                ...(res.refreshed ? { refreshed: true } : {}),
+                ...(res.error && !res.online ? { error: res.error } : {}),
+            });
+        }
+        this.log.debug(`Check of ${out.length} favourite(s): ${offline} do not answer`);
+        return out;
+    }
+
+    /**
      * The cover of the song that plays, else the logo of the station.
      *
      * @param {Running} r - Target
@@ -985,6 +1084,10 @@ class Webradio extends utils.Adapter {
                 this.log.debug(`${foreign.t.name}: the player plays something else now`);
                 await this.stopTarget(foreign, false);
             }
+            return;
+        }
+        if (!state.ack && id === `${this.namespace}.info.checkStations` && state.val) {
+            void this.checkStations();
             return;
         }
         if (state.ack || !id.startsWith(`${this.namespace}.targets.`)) {
@@ -1240,6 +1343,8 @@ class Webradio extends utils.Adapter {
                 } else {
                     answer({ targets: sel.targets.map(r => this.describe(r, rooms)) });
                 }
+            } else if (obj.command === 'check_stations') {
+                answer({ stations: await this.checkStations() });
             } else if (obj.command === 'history') {
                 const sel =
                     msg.target || msg.room

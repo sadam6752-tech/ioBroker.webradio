@@ -423,6 +423,23 @@ tests.integration(path.join(__dirname, '..'), {
                 await send('stop', { target: 'kitchen' });
             });
 
+            it('checks the favourites: by message and by the button', async function () {
+                this.timeout(60_000);
+                const res = await send('check_stations', {});
+                assert.deepEqual(
+                    res.stations.map(s => [s.id, s.online]),
+                    [
+                        ['test_radio', true],
+                        ['playlist_radio', true],
+                    ],
+                );
+                assert.equal(await state('webradio.0.stations.test_radio.online'), true);
+                const checked = Number(await state('webradio.0.stations.test_radio.checked'));
+                assert.ok(checked > Date.now() - 60_000, String(checked));
+                await harness.states.setStateAsync('webradio.0.info.checkStations', { val: true, ack: false });
+                await waitFor('webradio.0.stations.playlist_radio.checked', v => Number(v) > checked);
+            });
+
             it('keeps the titles that played on a player', async function () {
                 this.timeout(60_000);
                 const res = await send('history', { target: 'kitchen', limit: 50 });

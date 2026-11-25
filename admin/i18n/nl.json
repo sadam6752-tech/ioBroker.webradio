@@ -42,5 +42,6 @@
     "Add the stations of the field to the table": "Zenders uit het veld aan de tabel toevoegen",
     "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON of één URL per regel",
     "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Plak een afspeellijst en voeg de zenders toe, of exporteer de tabel en kopieer de tekst. Zenders met een URL die al in de tabel staat, worden overgeslagen. Sla de instellingen op om de wijziging te bewaren.",
-    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Toon de hoes van het spelende nummer (gezocht in de iTunes Search API: artiest en titel gaan naar Apple)"
+    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Toon de hoes van het spelende nummer (gezocht in de iTunes Search API: artiest en titel gaan naar Apple)",
+    "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "De favoriete zenders eenmaal per dag controleren; een zender uit radio-browser.info die niet antwoordt, krijgt daar zijn nieuwe URL vandaan"
 }
