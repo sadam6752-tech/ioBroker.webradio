@@ -9,6 +9,7 @@ const { startIcyServer } = require('./helpers/icy-server');
 const HTTP_PORT = 47196;
 const SAT = 'assistant.0.satellites.Kitchen';
 const GONE = 'assistant.0.satellites.Gone';
+const BATH = 'assistant.0.satellites.Bath';
 const DUNE = 'dune-hd-remote.0';
 
 /**
@@ -83,11 +84,17 @@ tests.integration(path.join(__dirname, '..'), {
                     native: { esphome: '10.0.0.5' },
                 });
                 await harness.objects.setObjectAsync(GONE, { type: 'device', common: { name: 'Gone' }, native: {} });
+                await harness.objects.setObjectAsync(BATH, {
+                    type: 'device',
+                    common: { name: 'Bath' },
+                    native: { esphome: '10.0.0.6' },
+                });
                 for (const [id, type, role, extra] of [
                     [`${SAT}.controls.player.url`, 'string', 'media.url', {}],
                     [`${SAT}.controls.player.volume`, 'number', 'level.volume', { min: 0, max: 1 }],
                     [`${SAT}.controls.media_title`, 'string', 'text', {}],
                     [`${GONE}.controls.player.url`, 'string', 'media.url', {}],
+                    [`${BATH}.controls.player.url`, 'string', 'media.url', {}],
                     [`${DUNE}.media.playUrl`, 'string', 'media.url', {}],
                     [`${DUNE}.control.stop`, 'boolean', 'button.stop', {}],
                 ]) {
@@ -540,6 +547,27 @@ tests.integration(path.join(__dirname, '..'), {
                 );
                 // the admin search without a name: the most played stations of a country (needs radio-browser.info)
                 assert.deepEqual(await send('adminSearch', { query: '', country: '' }), []);
+            });
+
+            it('multiroom: one station on two satellites, one connection to the station', async function () {
+                this.timeout(90_000);
+                const before = radio.requests.filter(r => r.startsWith('/station ioBroker.webradio')).length;
+                const res = await send('play', { station: 'test', targets: ['kitchen', 'Bath'] });
+                assert.deepEqual(res.targets, ['Kitchen', 'Bath'], JSON.stringify(res));
+                assert.equal(res.stationId, 'test_radio');
+                const urls = [];
+                for (const sat of [SAT, BATH]) {
+                    urls.push(
+                        await waitFor(`${sat}.controls.player.url`, v => typeof v === 'string' && v.includes('/play/')),
+                    );
+                }
+                const keep = http.get(urls[0], r => r.resume());
+                await new Promise(r => setTimeout(r, 1500));
+                await readFlac(urls[1]);
+                keep.destroy();
+                const opened = radio.requests.filter(r => r.startsWith('/station ioBroker.webradio')).length - before;
+                assert.equal(opened, 1, 'one connection for both players');
+                await send('stop', {});
             });
 
             it('skips a player whose objects were deleted, without writing to it', async function () {

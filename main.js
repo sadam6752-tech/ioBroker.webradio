@@ -1308,6 +1308,30 @@ class Webradio extends utils.Adapter {
     }
 
     /**
+     * The players of a play command: several with targets: [...] or with room and all: true (multiroom), else one.
+     *
+     * @param {Record<string, unknown>} msg - `{target?, room?, targets?, all?}`
+     * @returns {Promise<{targets: Running[]} | {error: string, ask?: string, choices?: string[]}>} Players
+     */
+    async playTargets(msg) {
+        if (Array.isArray(msg.targets) && msg.targets.length) {
+            /** @type {Running[]} */
+            const out = [];
+            for (const target of msg.targets) {
+                const sel = await this.resolveTargets({ target }, false);
+                if ('error' in sel) {
+                    return sel;
+                }
+                if (!out.includes(sel.targets[0])) {
+                    out.push(sel.targets[0]);
+                }
+            }
+            return { targets: out };
+        }
+        return this.resolveTargets(msg, msg.all === true && !!msg.room);
+    }
+
+    /**
      * The targets a message means.
      *
      * @param {{target?: unknown, room?: unknown}} msg - Message
@@ -1545,7 +1569,7 @@ class Webradio extends utils.Adapter {
                 }
                 answer({ targets: out });
             } else if (obj.command === 'play') {
-                const sel = await this.resolveTargets(msg, false);
+                const sel = await this.playTargets(msg);
                 if ('error' in sel) {
                     answer(sel);
                     return;
@@ -1555,9 +1579,34 @@ class Webradio extends utils.Adapter {
                     answer(st);
                     return;
                 }
-                const r = sel.targets[0];
-                const error = await this.playStation(r, st.station);
-                answer(error ? { error } : { ...this.playedAnswer(r, st.station), source: st.source });
+                if (sel.targets.length === 1) {
+                    const r = sel.targets[0];
+                    const error = await this.playStation(r, st.station);
+                    answer(error ? { error } : { ...this.playedAnswer(r, st.station), source: st.source });
+                    return;
+                }
+                // multiroom: players with the same format share one stream of the adapter
+                const played = [];
+                const errors = [];
+                for (const r of sel.targets) {
+                    const error = await this.playStation(r, st.station);
+                    if (error) {
+                        errors.push({ target: r.t.name, error });
+                    } else {
+                        played.push(r.t.name);
+                    }
+                }
+                answer(
+                    played.length
+                        ? {
+                              ...this.playedAnswer(sel.targets[0], st.station),
+                              target: played.join(', '),
+                              targets: played,
+                              source: st.source,
+                              ...(errors.length ? { errors } : {}),
+                          }
+                        : { error: errors.map(e => `${e.target}: ${e.error}`).join('; ') },
+                );
             } else if (obj.command === 'resume' || obj.command === 'next' || obj.command === 'prev') {
                 const sel = await this.resolveTargets(msg, false);
                 if ('error' in sel) {

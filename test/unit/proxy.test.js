@@ -187,6 +187,58 @@ describe('stream proxy', function () {
         assert.match(String(why), /HTTP 404/);
     });
 
+    it('multiroom: two players of the same format share one connection and one ffmpeg; the late one gets a clean start', async () => {
+        const make = (id, name) =>
+            new Channel({
+                id,
+                name,
+                codec: 'flac',
+                sampleRate: 48000,
+                channels: 1,
+                ffmpegPath: String(ffmpegPath),
+                userAgent: 'multiroom-test',
+                timers,
+                log,
+                onTitle: () => undefined,
+                onEnd: () => undefined,
+            });
+        const kitchen = make('kitchen', 'Kitchen');
+        const bath = make('bath', 'Bath');
+        const server = new StreamServer(log, async () => null);
+        server.add(kitchen);
+        server.add(bath);
+        const port = await server.listen(0, '127.0.0.1');
+        const opened = () => radio.requests.filter(r => r.includes('multiroom-test')).length;
+        try {
+            kitchen.setSource(`${radio.base}/station`);
+            bath.setSource(`${radio.base}/station`);
+            const first = await fetchBytes(`http://127.0.0.1:${port}${kitchen.path}?n=1`, {}, 20_000);
+            assert.equal(first.body.subarray(0, 4).toString('latin1'), 'fLaC');
+            // the kitchen keeps listening while the bath joins
+            const keep = http.get(`http://127.0.0.1:${port}${kitchen.path}?n=2`, res => res.resume());
+            await new Promise(r => setTimeout(r, 1500));
+            assert.equal(server.broadcasts.size, 1);
+            const late = await fetchBytes(`http://127.0.0.1:${port}${bath.path}?n=3`, {}, 20_000);
+            assert.equal(late.body.subarray(0, 4).toString('latin1'), 'fLaC', 'the late player gets the header first');
+            assert.equal(server.broadcasts.size, 1, 'still one broadcast');
+            const r = spawnSync(
+                String(ffmpegPath),
+                ['-hide_banner', '-loglevel', 'error', '-f', 'flac', '-i', 'pipe:0', '-f', 'null', '-'],
+                {
+                    input: late.body,
+                },
+            );
+            assert.equal(String(r.stderr).trim(), '', 'the late stream decodes cleanly');
+            keep.destroy();
+            await new Promise(r => setTimeout(r, 300));
+            assert.equal(server.broadcasts.size, 0, 'the last player left: the broadcast ended');
+            // one connection for kitchen + bath while they listened together, one for the first single request
+            assert.equal(opened(), 2, radio.requests.join('; '));
+        } finally {
+            await server.close();
+        }
+    });
+
     it('builds ffmpeg arguments for FLAC, MP3 and HLS', () => {
         const flac = ffmpegArgs('flac', 48000, 1);
         assert.deepEqual(flac.slice(flac.indexOf('-i'), flac.indexOf('-i') + 2), ['-i', 'pipe:0']);
