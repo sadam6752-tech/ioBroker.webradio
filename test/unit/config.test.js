@@ -90,12 +90,12 @@ describe('players', () => {
 
     it('finds satellites and panels; a satellite that is a panel too is taken once, as the panel', () => {
         const objects = {
-            'assistant.0.satellites.Gast': device('Gast', { esphome: '192.168.1.246' }),
+            'assistant.0.satellites.Gast': device('Gast', { esphome: '192.0.2.46' }),
             'assistant.0.satellites.Gast.controls.player.url': state('media.url'),
             'assistant.0.satellites.Gast.controls.second.url': state('media.url'),
-            'assistant.0.satellites.Mini': device('Mini', { esphome: '192.168.1.78' }),
+            'assistant.0.satellites.Mini': device('Mini', { esphome: '192.0.2.78' }),
             'assistant.0.satellites.Mini.controls.media_player.url': state('media.url'),
-            'satellite-display.0.satellites.mini': device('Mini', { host: '192.168.1.78' }),
+            'satellite-display.0.satellites.mini': device('Mini', { host: '192.0.2.78' }),
             'satellite-display.0.satellites.mini.media.url': state('media.url'),
             'satellite-display.0.satellites.panel-mobil.media.url': state('media.url'),
             'dune-hd-remote.0.media.playUrl': state('media.url'),
