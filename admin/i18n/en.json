@@ -43,5 +43,7 @@
     "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON or one URL per line",
     "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.",
     "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)",
-    "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there"
+    "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there",
+    "Devices": "Devices",
+    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run."
 }

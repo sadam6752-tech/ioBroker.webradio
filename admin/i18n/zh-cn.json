@@ -43,5 +43,7 @@
     "M3U, PLS, JSON or one URL per line": "M3U、PLS、JSON 或每行一个 URL",
     "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "粘贴播放列表并添加其中的电台，或导出表格并复制文本。表格中已有相同 URL 的电台会被跳过。保存设置以保留更改。",
     "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "显示正在播放歌曲的封面（在 iTunes Search API 中查找：艺术家和标题会发送给 Apple）",
-    "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "每天检查一次收藏的电台；来自 radio-browser.info 但无响应的电台会从那里获取新的 URL"
+    "Check the favourite stations once a day; a station of radio-browser.info that does not answer gets its new URL from there": "每天检查一次收藏的电台；来自 radio-browser.info 但无响应的电台会从那里获取新的 URL",
+    "Devices": "设备",
+    "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.": "此实例的播放器：收音机开关、电台、音量、正在播放、睡眠定时器、上一个和下一个电台；详细信息显示流、下次唤醒和最近的曲目。在“播放器”选项卡中添加或更改播放器。实例必须正在运行。"
 }

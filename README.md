@@ -67,7 +67,7 @@ The **daily check** opens every favourite once a day (the first time two minutes
 from radio-browser.info that does not answer gets the URL the catalog has now, when that one answers; the new URL is
 kept in the station's object and used until the URL in the settings changes — the settings stay as they are.
 
-**Device Manager** — the tab _Devices_ of the admin shows a card per player: radio on/off (resume / stop), the station,
+**Device Manager** — the tab _Devices_ of the settings (and the tab _Devices_ of the admin, which may have to be switched on with _Filter menu_) shows a card per player: radio on/off (resume / stop), the station,
 the volume, now playing, the sleep timer, previous and next; below it the stream, the next wake-up and the last titles.
 The instance action checks the favourites.
 

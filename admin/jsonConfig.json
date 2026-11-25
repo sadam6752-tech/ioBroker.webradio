@@ -316,6 +316,34 @@
                 }
             }
         },
+        "_devicesTab": {
+            "type": "panel",
+            "label": "Devices",
+            "items": {
+                "_devicesIntro": {
+                    "type": "staticText",
+                    "text": "The players of this instance: radio on or off, station, volume, now playing, sleep timer, previous and next; the details show the stream, the next wake-up and the last titles. Add or change players in the tab Players. The instance must run.",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "_deviceManager": {
+                    "type": "deviceManager",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12,
+                    "style": {
+                        "width": "100%",
+                        "height": "100%",
+                        "overflow": "hidden"
+                    }
+                }
+            }
+        },
         "_settingsTab": {
             "type": "panel",
             "label": "Settings",
