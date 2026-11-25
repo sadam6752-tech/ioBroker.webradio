@@ -106,6 +106,7 @@
             "vis-2"
         ],
         "supportedMessages": {
+            "deviceManager": true,
             "help": true
         },
         "declareUsedResources": true

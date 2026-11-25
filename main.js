@@ -28,6 +28,7 @@ const {
 const { exportStations, importStations } = require('./lib/transfer');
 const { CoverFinder } = require('./lib/cover');
 const { normalizeTime, parseDays, nextAlarm, Ramp } = require('./lib/alarm');
+const { RadioDeviceManagement } = require('./lib/device-management');
 const { stationList, targetList } = require('./lib/lists');
 const {
     normalizeStations,
@@ -118,6 +119,8 @@ class Webradio extends utils.Adapter {
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
         this.on('message', this.onMessage.bind(this));
+        // the players in the Device Manager (tab Devices); it answers the dm:* messages itself
+        this.deviceManagement = new RadioDeviceManagement(this);
         this.on('unload', this.onUnload.bind(this));
     }
 
@@ -938,6 +941,14 @@ class Webradio extends utils.Adapter {
     }
 
     /**
+     * @param {Target} t - Player
+     * @returns {{direct: boolean, codec?: string, sampleRate?: number, channels?: number}} How it gets the station
+     */
+    streamOf(t) {
+        return streamFor(t);
+    }
+
+    /**
      * Writes one alarm setting of a player (normalized, ack) and plans the alarm again.
      *
      * @param {Running} r - Target
@@ -1418,8 +1429,8 @@ class Webradio extends utils.Adapter {
      * @param {ioBroker.Message} obj - Message
      */
     async onMessage(obj) {
-        if (!obj?.command) {
-            return;
+        if (!obj?.command || obj.command.startsWith('dm:')) {
+            return; // dm:* is answered by lib/device-management.js
         }
         const answer = result => obj.callback && this.sendTo(obj.from, obj.command, result, obj.callback);
         const msg = /** @type {Record<string, unknown>} */ (

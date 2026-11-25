@@ -465,6 +465,16 @@ tests.integration(path.join(__dirname, '..'), {
                 await send('stop', { target: 'kitchen' });
             });
 
+            it('answers the Device Manager of the admin (dm:instanceInfo)', async function () {
+                this.timeout(30_000);
+                const info = await send('dm:instanceInfo', {});
+                assert.equal(info.error, undefined, JSON.stringify(info));
+                assert.ok(
+                    info.actions.some(a => a.id === 'checkStations'),
+                    JSON.stringify(info),
+                );
+            });
+
             it('checks the favourites: by message and by the button', async function () {
                 this.timeout(60_000);
                 const res = await send('check_stations', {});
