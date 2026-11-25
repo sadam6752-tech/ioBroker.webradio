@@ -125,24 +125,14 @@ stations themselves see the same User-Agent and the address of the ioBroker host
     ### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
-
-- The stream server takes the next free port when the configured one is in use, also one that another instance
-  declares (js-controller 8)
-- Station logos are kept in the file storage `webradio.0.storage/logos`; the folder `webradio.0.logos` of 0.0.1 is
-  moved once
-- vis widget "Radio": station logos as tiles, player choice, stop, volume and now playing; the lists
-  `info.stations` and `info.targets` for it
-- `search_stations` answers with the filters it sent (`query`) and a hint when they found nothing; `play` says whether
-  it took a favourite, a catalog station or a URL (`source`, `stationId`, `uuid`)
-- Stations whose stream server ends the HTTP status line without CR (e.g. RPR1) play again; playlists are recognised
-  by their content (m3u, pls, asx, xspf, HLS) instead of the extension, and players that play by themselves get the
-  stream inside a playlist
-
 ### 0.0.1 (2026-11-25)
 
-- First version: favourite stations, search in radio-browser.info, players found automatically, stream proxy with
-  ffmpeg and ICY titles, help for AI agents
+- First version: favourite stations with cached logos, search in radio-browser.info, players found automatically
+  (ioBroker.assistant, satellite-display, Dune HD) or any media.url state
+- Stream proxy with ffmpeg (FLAC/MP3 for ESPHome players) and ICY titles; playlists (m3u, pls, asx, xspf), HLS and
+  redirects; the stream server takes the next free port when the configured one is in use
+- vis widget "Radio" (vis 1): station tiles, player choice, stop, volume and now playing
+- Help for AI agents (pi-agent): list, search, play, stop and now playing by message
 
 ## License
 

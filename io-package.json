@@ -4,17 +4,17 @@
         "version": "0.0.1",
         "news": {
             "0.0.1": {
-                "en": "First version: favourite stations, search in radio-browser.info, players found automatically, stream proxy with ffmpeg and ICY titles, help for AI agents",
-                "de": "Erste Version: Lieblingssender, Suche in radio-browser.info, automatisch gefundene Abspielgeräte, Stream-Proxy mit ffmpeg und ICY-Titeln, Hilfe für KI-Agenten",
-                "ru": "Первая версия: избранные станции, поиск в radio-browser.info, автоматически найденные плееры, прокси потока с ffmpeg и названиями ICY, справка для ИИ-агентов",
-                "pt": "Primeira versão: estações favoritas, pesquisa no radio-browser.info, leitores encontrados automaticamente, proxy de stream com ffmpeg e títulos ICY, ajuda para agentes de IA",
-                "nl": "Eerste versie: favoriete zenders, zoeken in radio-browser.info, automatisch gevonden spelers, streamproxy met ffmpeg en ICY-titels, hulp voor AI-agenten",
-                "fr": "Première version : stations favorites, recherche dans radio-browser.info, lecteurs trouvés automatiquement, proxy de flux avec ffmpeg et titres ICY, aide pour les agents IA",
-                "it": "Prima versione: stazioni preferite, ricerca in radio-browser.info, lettori trovati automaticamente, proxy dello stream con ffmpeg e titoli ICY, aiuto per agenti IA",
-                "es": "Primera versión: emisoras favoritas, búsqueda en radio-browser.info, reproductores encontrados automáticamente, proxy de stream con ffmpeg y títulos ICY, ayuda para agentes de IA",
-                "pl": "Pierwsza wersja: ulubione stacje, wyszukiwanie w radio-browser.info, automatycznie znalezione odtwarzacze, proxy strumienia z ffmpeg i tytułami ICY, pomoc dla agentów AI",
-                "uk": "Перша версія: улюблені станції, пошук у radio-browser.info, автоматично знайдені плеєри, проксі потоку з ffmpeg і назвами ICY, довідка для ШІ-агентів",
-                "zh-cn": "第一个版本：收藏电台、在 radio-browser.info 中搜索、自动发现播放器、带 ffmpeg 和 ICY 标题的流代理、面向 AI 代理的帮助"
+                "en": "First version: favourite stations with logos, search in radio-browser.info, players found automatically, stream proxy with ffmpeg and ICY titles, playlists and HLS, vis widget \"Radio\", help for AI agents",
+                "de": "Erste Version: Lieblingssender mit Logos, Suche in radio-browser.info, automatisch gefundene Player, Stream-Proxy mit ffmpeg und ICY-Titeln, Playlists und HLS, vis-Widget \"Radio\", Hilfe für KI-Agenten",
+                "ru": "Первая версия: избранные станции с логотипами, поиск в radio-browser.info, автоматически найденные плееры, прокси потоков с ffmpeg и ICY-названиями, плейлисты и HLS, виджет vis «Radio», справка для ИИ-агентов",
+                "pt": "Primeira versão: estações favoritas com logótipos, pesquisa no radio-browser.info, leitores encontrados automaticamente, proxy de streams com ffmpeg e títulos ICY, listas de reprodução e HLS, widget vis \"Radio\", ajuda para agentes de IA",
+                "nl": "Eerste versie: favoriete zenders met logo's, zoeken in radio-browser.info, automatisch gevonden spelers, streamproxy met ffmpeg en ICY-titels, afspeellijsten en HLS, vis-widget \"Radio\", hulp voor AI-agenten",
+                "fr": "Première version : stations favorites avec logos, recherche dans radio-browser.info, lecteurs trouvés automatiquement, proxy de flux avec ffmpeg et titres ICY, listes de lecture et HLS, widget vis « Radio », aide pour les agents IA",
+                "it": "Prima versione: stazioni preferite con loghi, ricerca in radio-browser.info, lettori trovati automaticamente, proxy dei flussi con ffmpeg e titoli ICY, playlist e HLS, widget vis \"Radio\", aiuto per agenti IA",
+                "es": "Primera versión: emisoras favoritas con logotipos, búsqueda en radio-browser.info, reproductores encontrados automáticamente, proxy de streams con ffmpeg y títulos ICY, listas de reproducción y HLS, widget de vis \"Radio\", ayuda para agentes de IA",
+                "pl": "Pierwsza wersja: ulubione stacje z logo, wyszukiwanie w radio-browser.info, automatycznie wykrywane odtwarzacze, proxy strumieni z ffmpeg i tytułami ICY, playlisty i HLS, widżet vis \"Radio\", pomoc dla agentów AI",
+                "uk": "Перша версія: улюблені станції з логотипами, пошук у radio-browser.info, автоматично знайдені плеєри, проксі потоків з ffmpeg і ICY-назвами, плейлисти та HLS, віджет vis «Radio», довідка для ШІ-агентів",
+                "zh-cn": "第一个版本：带台标的收藏电台、在 radio-browser.info 中搜索、自动发现的播放器、使用 ffmpeg 和 ICY 标题的流代理、播放列表和 HLS、vis 小部件“Radio”、面向 AI 代理的帮助"
             }
         },
         "titleLang": {
