@@ -47,12 +47,29 @@ tests.integration(path.join(__dirname, '..'), {
                 harness = getHarness();
                 const mp3 = spawnSync(
                     String(ffmpegPath),
-                    ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1', '-c:a', 'libmp3lame', '-f', 'mp3', 'pipe:1'],
+                    [
+                        '-hide_banner',
+                        '-loglevel',
+                        'error',
+                        '-f',
+                        'lavfi',
+                        '-i',
+                        'sine=frequency=440:duration=1',
+                        '-c:a',
+                        'libmp3lame',
+                        '-f',
+                        'mp3',
+                        'pipe:1',
+                    ],
                     { maxBuffer: 10 * 1024 * 1024 },
                 ).stdout;
                 radio = await startIcyServer({ audio: mp3, metaInt: 2000, titles: ['Test Artist - Test Song'] });
                 // the objects ioBroker.assistant creates for a satellite with a media player, a room, and Dune HD
-                await harness.objects.setObjectAsync(SAT, { type: 'device', common: { name: 'Kitchen' }, native: { esphome: '10.0.0.5' } });
+                await harness.objects.setObjectAsync(SAT, {
+                    type: 'device',
+                    common: { name: 'Kitchen' },
+                    native: { esphome: '10.0.0.5' },
+                });
                 await harness.objects.setObjectAsync(GONE, { type: 'device', common: { name: 'Gone' }, native: {} });
                 for (const [id, type, role, extra] of [
                     [`${SAT}.controls.player.url`, 'string', 'media.url', {}],
@@ -83,7 +100,13 @@ tests.integration(path.join(__dirname, '..'), {
                                 logo: `${radio.base}/logo.png`,
                                 tags: 'test',
                             },
-                            { enabled: true, name: 'Playlist Radio', url: `${radio.base}/list.pls`, logo: '', tags: '' },
+                            {
+                                enabled: true,
+                                name: 'Playlist Radio',
+                                url: `${radio.base}/list.pls`,
+                                logo: '',
+                                tags: '',
+                            },
                         ],
                         targets: [{ enabled: true, name: 'Cinema', urlState: `${DUNE}.media.playUrl` }],
                         port: HTTP_PORT,
@@ -165,7 +188,9 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.equal(storage?.type, 'meta');
                 assert.equal(storage?.common?.type, 'meta.user');
                 const readFile = (mount, name) =>
-                    new Promise(resolve => harness.objects.readFile(mount, name, null, (err, data) => resolve(err ? null : data)));
+                    new Promise(resolve =>
+                        harness.objects.readFile(mount, name, null, (err, data) => resolve(err ? null : data)),
+                    );
                 const file = await readFile('webradio.0.storage', 'logos/test_radio.png');
                 assert.ok(file, 'logo file in the storage');
                 assert.equal(Buffer.from(file).subarray(1, 4).toString('latin1'), 'PNG');
@@ -174,13 +199,18 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.equal(await readFile('webradio.0.storage', 'logos/playlist_radio.png'), null);
                 assert.equal(await readFile('webradio.0.logos', 'playlist_radio.png'), null, 'old file removed');
                 // the lists of the vis widget name the cached file and the players
-                const stations = JSON.parse(String(await waitFor('webradio.0.info.stations', v => String(v).includes('storage/logos'))));
-                assert.deepEqual(stations.find(s => s.id === 'test_radio'), {
-                    id: 'test_radio',
-                    name: 'Test Radio',
-                    logo: logoUrl,
-                    file: 'webradio.0.storage/logos/test_radio.png',
-                });
+                const stations = JSON.parse(
+                    String(await waitFor('webradio.0.info.stations', v => String(v).includes('storage/logos'))),
+                );
+                assert.deepEqual(
+                    stations.find(s => s.id === 'test_radio'),
+                    {
+                        id: 'test_radio',
+                        name: 'Test Radio',
+                        logo: logoUrl,
+                        file: 'webradio.0.storage/logos/test_radio.png',
+                    },
+                );
                 const targets = JSON.parse(String(await state('webradio.0.info.targets')));
                 assert.deepEqual(targets.find(t => t.id === 'kitchen')?.rooms, ['Kitchen']);
                 assert.ok(targets.some(t => t.id === 'cinema'));
@@ -199,8 +229,17 @@ tests.integration(path.join(__dirname, '..'), {
             it('plays a favourite in a room through the proxy: FLAC with the ICY title on the satellite', async function () {
                 this.timeout(30_000);
                 const res = await send('play', { station: 'test', room: 'кухня' });
-                assert.deepEqual(res, { ok: true, target: 'Kitchen', station: 'Test Radio' });
-                const url = await waitFor(`${SAT}.controls.player.url`, v => typeof v === 'string' && v.includes('/play/'));
+                assert.deepEqual(res, {
+                    ok: true,
+                    target: 'Kitchen',
+                    station: 'Test Radio',
+                    stationId: 'test_radio',
+                    source: 'favourite',
+                });
+                const url = await waitFor(
+                    `${SAT}.controls.player.url`,
+                    v => typeof v === 'string' && v.includes('/play/'),
+                );
                 assert.match(url, new RegExp(`^http://127\\.0\\.0\\.1:${HTTP_PORT}/play/kitchen\\.flac\\?`));
                 assert.equal(await state('webradio.0.targets.kitchen.playing'), true);
                 const stream = await fetchBytes(url, 4000);
@@ -222,7 +261,10 @@ tests.integration(path.join(__dirname, '..'), {
 
             it('gives Dune HD the station URL and reads the titles by itself', async function () {
                 this.timeout(20_000);
-                await harness.states.setStateAsync('webradio.0.targets.cinema.station', { val: 'test_radio', ack: false });
+                await harness.states.setStateAsync('webradio.0.targets.cinema.station', {
+                    val: 'test_radio',
+                    ack: false,
+                });
                 await waitFor(`${DUNE}.media.playUrl`, v => v === `${radio.base}/station`);
                 await waitFor('webradio.0.targets.cinema.title', v => v === 'Test Artist - Test Song');
                 await harness.states.setStateAsync('webradio.0.targets.cinema.stop', { val: true, ack: false });
@@ -235,6 +277,19 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.ok(noPlayer.ask && noPlayer.choices.includes('Kitchen'));
                 const twoStations = await send('play', { station: 'radio', target: 'kitchen' });
                 assert.ok(twoStations.ask && twoStations.choices.length === 2);
+            });
+
+            it('says that a stream URL was played as a URL', async function () {
+                this.timeout(20_000);
+                const res = await send('play', { station: `${radio.base}/station`, target: 'cinema' });
+                assert.deepEqual(res, {
+                    ok: true,
+                    target: 'Cinema',
+                    station: `${radio.base}/station`,
+                    stationId: '',
+                    source: 'url',
+                });
+                await send('stop', { target: 'cinema' });
             });
 
             it('skips a player whose objects were deleted, without writing to it', async function () {

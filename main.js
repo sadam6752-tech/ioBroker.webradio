@@ -12,7 +12,7 @@ const { helpAnswer } = require('./lib/help');
 const { bindOf } = require('./lib/resources');
 const { listenOnFreePort } = require('./lib/port');
 const { STORAGE, LOGO_DIR, logoPath, normalizeLogoFile, migrateOldLogos } = require('./lib/storage');
-const { RadioBrowser } = require('./lib/radio-browser');
+const { RadioBrowser, searchParams, sentQuery } = require('./lib/radio-browser');
 const { Channel, StreamServer, SourceReader } = require('./lib/proxy');
 const { downloadLogo, MIME } = require('./lib/logos');
 const { stationList, targetList } = require('./lib/lists');
@@ -861,7 +861,8 @@ class Webradio extends utils.Adapter {
      * The station a message means: a favourite, a catalog uuid, a URL, or the best catalog match for a name.
      *
      * @param {unknown} value - Station from the message
-     * @returns {Promise<{station: Station, fromCatalog?: boolean} | {error: string, ask?: string, choices?: string[]}>} Station
+     * @returns {Promise<{station: Station, source: 'favourite' | 'catalog' | 'url'} | {error: string, ask?: string, choices?: string[]}>}
+     *   Station and where it came from
      */
     async resolveStation(value) {
         const q = String(value ?? '').trim();
@@ -869,12 +870,12 @@ class Webradio extends utils.Adapter {
             return { error: 'no station given', choices: this.stations.map(s => s.name) };
         }
         if (isStreamUrl(q)) {
-            return { station: { id: '', name: q, url: q, logo: '', tags: [], uuid: '' } };
+            return { station: { id: '', name: q, url: q, logo: '', tags: [], uuid: '' }, source: 'url' };
         }
         const fav = findByName(this.stations, q, s => s.tags);
         const exact = fav.filter(s => s.id === q || s.name.toLowerCase() === q.toLowerCase());
         if (exact.length === 1 || fav.length === 1) {
-            return { station: exact[0] || fav[0] };
+            return { station: exact[0] || fav[0], source: 'favourite' };
         }
         if (fav.length > 1) {
             return {
@@ -898,7 +899,7 @@ class Webradio extends utils.Adapter {
                 tags: fromCatalog.tags,
                 uuid: fromCatalog.uuid,
             },
-            fromCatalog: true,
+            source: 'catalog',
         };
     }
 
@@ -946,7 +947,15 @@ class Webradio extends utils.Adapter {
                 });
             } else if (obj.command === 'search_stations') {
                 const found = await this.catalog.search(msg);
+                const query = sentQuery(searchParams(msg));
+                const filtered = 'countrycode' in query || 'country' in query || 'tag' in query;
                 answer({
+                    query,
+                    ...(!found.length && filtered
+                        ? {
+                              hint: 'Nothing with these filters. Try again without country/tag, or with another spelling of the name (Latin or the original script).',
+                          }
+                        : {}),
                     stations: found.map(s => ({
                         uuid: s.uuid,
                         name: s.name,
@@ -988,7 +997,9 @@ class Webradio extends utils.Adapter {
                               ok: true,
                               target: r.t.name,
                               station: st.station.name,
-                              ...(st.fromCatalog ? { fromCatalog: true } : {}),
+                              stationId: st.station.id,
+                              source: st.source,
+                              ...(st.source === 'catalog' ? { uuid: st.station.uuid } : {}),
                           },
                 );
             } else if (obj.command === 'stop') {

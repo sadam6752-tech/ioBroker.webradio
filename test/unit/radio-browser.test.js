@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { RadioBrowser, toCatalogStation, searchParams } = require('../../lib/radio-browser');
+const { RadioBrowser, toCatalogStation, searchParams, sentQuery } = require('../../lib/radio-browser');
 const { sniffImage } = require('../../lib/logos');
 
 /**
@@ -51,6 +51,26 @@ describe('radio-browser.info', () => {
         assert.equal(searchParams({ name: 'x' }).get('limit'), '10');
     });
 
+    it('sends a two-letter country as countrycode, a longer one as country, names in UTF-8', async () => {
+        const ru = searchParams({ query: 'Радио Рекорд', country: 'RU', limit: 15 });
+        assert.equal(ru.get('countrycode'), 'RU');
+        assert.equal(ru.has('country'), false);
+        assert.match(ru.toString(), /name=%D0%A0%D0%B0%D0%B4%D0%B8%D0%BE\+%D0%A0%D0%B5%D0%BA%D0%BE%D1%80%D0%B4/);
+        assert.deepEqual(sentQuery(ru), { name: 'Радио Рекорд', countrycode: 'RU', limit: 15 });
+        const long = searchParams({ query: 'Record', country: 'Russian Federation' });
+        assert.equal(long.get('country'), 'Russian Federation');
+        assert.equal(long.has('countrycode'), false);
+        assert.equal(searchParams({ query: 'x', countrycode: 'de' }).get('countrycode'), 'DE', 'countrycode as alias');
+        assert.deepEqual(sentQuery(searchParams({ tag: 'trance', limit: 3 })), { tag: 'trance', limit: 3 });
+
+        const { fetch, calls } = fakeFetch({
+            'de1.api.radio-browser.info': url => (url.includes('countrycode=RU') ? [RECORD] : []),
+        });
+        const rb = new RadioBrowser({ userAgent: 'ua', server: 'de1.api.radio-browser.info', fetch });
+        assert.equal((await rb.search({ query: 'Радио Рекорд', country: 'RU' })).length, 1);
+        assert.equal(new URL(calls[0].url).searchParams.get('name'), 'Радио Рекорд');
+    });
+
     it('keeps the fields the adapter uses, the resolved URL first', () => {
         const s = toCatalogStation(RECORD);
         assert.equal(s.name, 'Radio Record Trancehouse');
@@ -62,7 +82,11 @@ describe('radio-browser.info', () => {
 
     it('asks a mirror from the server list and falls back to the next one', async () => {
         const { fetch, calls } = fakeFetch({
-            'all.api.radio-browser.info': [{ name: 'de1.api.radio-browser.info' }, { name: 'evil.example.com' }, { name: 'nl1.api.radio-browser.info' }],
+            'all.api.radio-browser.info': [
+                { name: 'de1.api.radio-browser.info' },
+                { name: 'evil.example.com' },
+                { name: 'nl1.api.radio-browser.info' },
+            ],
             'de1.api.radio-browser.info': new Error('down'),
             'nl1.api.radio-browser.info': [RECORD],
         });

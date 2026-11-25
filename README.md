@@ -95,17 +95,23 @@ vis 2 can show vis 1 widgets as well; this set was made and tried for vis 1.
 
 `sendTo('webradio.0', '<command>', {...})` — the command `help` describes all of them:
 
-| Command           | Message                           | Answer                                                           |
-| ----------------- | --------------------------------- | ---------------------------------------------------------------- |
-| `list_stations`   | `{}`                              | `{stations: [{id, name, tags, url, logo}]}`                      |
-| `search_stations` | `{query, country?, tag?, limit?}` | `{stations: [{uuid, name, url, country, tags, codec, bitrate}]}` |
-| `list_targets`    | `{}`                              | `{targets: [{id, name, rooms, kind, playing, station, title}]}`  |
-| `play`            | `{station, target?, room?}`       | `{ok, target, station}`                                          |
-| `stop`            | `{target?, room?}`                | `{ok, stopped}`                                                  |
-| `now_playing`     | `{target?, room?}`                | `{targets: [...]}`                                               |
+| Command           | Message                           | Answer                                                                         |
+| ----------------- | --------------------------------- | ------------------------------------------------------------------------------ |
+| `list_stations`   | `{}`                              | `{stations: [{id, name, tags, url, logo}]}`                                    |
+| `search_stations` | `{query, country?, tag?, limit?}` | `{query, stations: [{uuid, name, url, country, tags, codec, bitrate}], hint?}` |
+| `list_targets`    | `{}`                              | `{targets: [{id, name, rooms, kind, playing, station, title}]}`                |
+| `play`            | `{station, target?, room?}`       | `{ok, target, station, stationId, source, uuid?}`                              |
+| `stop`            | `{target?, room?}`                | `{ok, stopped}`                                                                |
+| `now_playing`     | `{target?, room?}`                | `{targets: [...]}`                                                             |
 
-`station` is a favourite (id, name or part of the name), a radio-browser.info uuid, a stream URL, or any other name —
-then the most played match in radio-browser.info is taken. `room` is a room (`enum.rooms`) in any language.
+`station` is a stream URL, a favourite (id, name or part of the name; a favourite wins over a catalog station of the
+same name), a radio-browser.info uuid, or any other name — then the most played match in radio-browser.info is taken.
+The answer of `play` says which: `source` is `favourite` (with `stationId`), `catalog` (with `uuid`) or `url`. `room`
+is a room (`enum.rooms`) in any language.
+
+`country` in `search_stations` is an ISO code when it has two letters (`RU`, `DE`), otherwise a part of the English
+country name of the catalog (`Russian Federation`). The `query` field of the answer shows the filters as the catalog
+got them; `hint` comes when the filters found nothing.
 
 ## Privacy
 
@@ -127,6 +133,8 @@ stations themselves see the same User-Agent and the address of the ioBroker host
   moved once
 - vis widget "Radio": station logos as tiles, player choice, stop, volume and now playing; the lists
   `info.stations` and `info.targets` for it
+- `search_stations` answers with the filters it sent (`query`) and a hint when they found nothing; `play` says whether
+  it took a favourite, a catalog station or a URL (`source`, `stationId`, `uuid`)
 
 ### 0.0.1 (2026-11-25)
 
