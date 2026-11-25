@@ -10,6 +10,7 @@ const utils = require('@iobroker/adapter-core');
 const { NAMES } = require('./lib/names');
 const { helpAnswer } = require('./lib/help');
 const { bindOf } = require('./lib/resources');
+const { listenOnFreePort } = require('./lib/port');
 const { RadioBrowser } = require('./lib/radio-browser');
 const { Channel, StreamServer, SourceReader } = require('./lib/proxy');
 const { downloadLogo, MIME } = require('./lib/logos');
@@ -131,14 +132,46 @@ class Webradio extends utils.Adapter {
         this.http = http;
         const port = Number(this.config.port) || DEFAULT_PORT;
         const bind = String(this.config.bind || '0.0.0.0');
-        await this.checkPort(port, bind);
-        if (this.http !== http) {
-            return; // stopped while it was starting
-        }
         try {
-            this.httpPort = await http.listen(port, bind);
+            const open = await listenOnFreePort(port, {
+                // the operating system: getPort of adapter-core tries the port and the ones after it
+                findFree: p =>
+                    new Promise(resolve => {
+                        const host = bindOf(bind);
+                        if (host) {
+                            this.getPort(p, host, resolve);
+                        } else {
+                            this.getPort(p, resolve);
+                        }
+                    }),
+                // js-controller 8: ports that other running instances declare, also while they are not listening
+                heldBy: p => this.heldBy(p, bind),
+                listen: p => {
+                    if (this.http !== http) {
+                        throw new Error('stopped while starting');
+                    }
+                    return http.listen(p, bind);
+                },
+            });
+            this.httpPort = open.port;
+            if (open.port !== port) {
+                this.log.info(
+                    `Stream server on port ${open.port}: the configured port ${port} is taken (${open.skipped
+                        .map(s => `${s.port} by ${s.by}`)
+                        .join(', ')}); set a free port in the settings (tab Settings, HTTP port) to keep a fixed one`,
+                );
+            }
         } catch (e) {
-            this.log.error(`Cannot open the HTTP port ${port}: ${e.message}`);
+            if (this.http !== http) {
+                return; // stopped while it was starting
+            }
+            this.http = null;
+            this.log.error(
+                `The stream server cannot start, nothing can be played: ${e.message}. Set a free port in the settings (tab Settings, HTTP port of the stream server)`,
+            );
+            return;
+        }
+        if (this.http !== http) {
             return;
         }
         await this.registerPort(this.httpPort, bind);
@@ -193,24 +226,24 @@ class Webradio extends utils.Adapter {
     }
 
     /**
-     * Warns before listening when another running instance declares the TCP port (js-controller 8).
+     * Other running instances that declare the TCP port (js-controller 8; empty on 7.x).
      *
      * @param {number} port - Port
      * @param {string} bind - Listen address
+     * @returns {Promise<string[]>} Instances
      */
-    async checkPort(port, bind) {
+    async heldBy(port, bind) {
         const reg = registryOf(this);
         if (!reg || !(port > 0)) {
-            return;
+            return [];
         }
         const b = bindOf(bind);
         try {
             const held = await reg.checkUsedResource('tcpPort', b ? { port, bind: b } : { port });
-            if (held.length) {
-                this.log.warn(`TCP port ${port} is already used by ${held.map(h => h.instance).join(', ')}`);
-            }
+            return [...new Set(held.map(h => h.instance))].filter(i => i !== `system.adapter.${this.namespace}`);
         } catch (e) {
             this.log.debug(`Used resources: check of port ${port} failed: ${e.message}`);
+            return [];
         }
     }
 
