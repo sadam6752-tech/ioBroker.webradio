@@ -76,7 +76,13 @@ tests.integration(path.join(__dirname, '..'), {
                 await harness.changeAdapterConfig('webradio', {
                     native: {
                         stations: [
-                            { enabled: true, name: 'Test Radio', url: `${radio.base}/station`, logo: '', tags: 'test' },
+                            {
+                                enabled: true,
+                                name: 'Test Radio',
+                                url: `${radio.base}/station`,
+                                logo: `${radio.base}/logo.png`,
+                                tags: 'test',
+                            },
                             { enabled: true, name: 'Playlist Radio', url: `${radio.base}/list.pls`, logo: '', tags: '' },
                         ],
                         targets: [{ enabled: true, name: 'Cinema', urlState: `${DUNE}.media.playUrl` }],
@@ -84,9 +90,16 @@ tests.integration(path.join(__dirname, '..'), {
                         bind: '127.0.0.1',
                         urlHost: '127.0.0.1',
                         readTitles: true,
-                        cacheLogos: false,
+                        cacheLogos: true,
                     },
                 });
+                // the logo folder of version 0.0.1: an own mount point with a cached file
+                await harness.objects.setObjectAsync('webradio.0.logos', {
+                    type: 'meta',
+                    common: { name: 'Station logos', type: 'meta.folder' },
+                    native: {},
+                });
+                await harness.objects.writeFileAsync('webradio.0.logos', 'playlist_radio.png', Buffer.from('OLD'));
                 await harness.startAdapterAndWait(true);
                 // the satellite "Gone" was found at the start and is removed now (like a deleted satellite)
                 await harness.objects.delObjectAsync(`${GONE}.controls.player.url`);
@@ -142,6 +155,27 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.ok(await harness.objects.getObjectAsync('webradio.0.targets.cinema.station'));
                 const station = await harness.objects.getObjectAsync('webradio.0.targets.kitchen.station');
                 assert.equal(station?.common?.states?.test_radio, 'Test Radio');
+            });
+
+            it('keeps the logos in webradio.0.storage/logos, moves away the folder of 0.0.1, serves them', async function () {
+                this.timeout(20_000);
+                const logoUrl = await waitFor('webradio.0.stations.test_radio.logo', v => String(v).includes('/logo/'));
+                assert.equal(logoUrl, `http://127.0.0.1:${HTTP_PORT}/logo/test_radio`);
+                const storage = await harness.objects.getObjectAsync('webradio.0.storage');
+                assert.equal(storage?.type, 'meta');
+                assert.equal(storage?.common?.type, 'meta.user');
+                const readFile = (mount, name) =>
+                    new Promise(resolve => harness.objects.readFile(mount, name, null, (err, data) => resolve(err ? null : data)));
+                const file = await readFile('webradio.0.storage', 'logos/test_radio.png');
+                assert.ok(file, 'logo file in the storage');
+                assert.equal(Buffer.from(file).subarray(1, 4).toString('latin1'), 'PNG');
+                assert.equal(await harness.objects.getObjectAsync('webradio.0.logos'), null, 'old mount point removed');
+                // the moved logo of a station without logo URL is removed as stale
+                assert.equal(await readFile('webradio.0.storage', 'logos/playlist_radio.png'), null);
+                assert.equal(await readFile('webradio.0.logos', 'playlist_radio.png'), null, 'old file removed');
+                const served = await fetchBytes(logoUrl, 11);
+                assert.equal(served.status, 200);
+                assert.equal(served.body.subarray(1, 4).toString('latin1'), 'PNG');
             });
 
             it('answers help with the commands', async function () {

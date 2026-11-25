@@ -11,6 +11,7 @@ const { NAMES } = require('./lib/names');
 const { helpAnswer } = require('./lib/help');
 const { bindOf } = require('./lib/resources');
 const { listenOnFreePort } = require('./lib/port');
+const { STORAGE, LOGO_DIR, logoPath, normalizeLogoFile, migrateOldLogos } = require('./lib/storage');
 const { RadioBrowser } = require('./lib/radio-browser');
 const { Channel, StreamServer, SourceReader } = require('./lib/proxy');
 const { downloadLogo, MIME } = require('./lib/logos');
@@ -48,7 +49,6 @@ const {
 
 /** Port of the stream server, next to airplay-receiver (8095) */
 const DEFAULT_PORT = 8096;
-const MOUNT = 'logos';
 
 /**
  * @param {unknown} adapter - Adapter
@@ -316,11 +316,13 @@ class Webradio extends utils.Adapter {
      * @param {Target[]} targets - Targets
      */
     async createObjects(stations, targets) {
-        await this.setObjectNotExistsAsync(MOUNT, {
+        // the file storage of the instance; meta.user: backups take it along
+        await this.setObjectNotExistsAsync(STORAGE, {
             type: 'meta',
-            common: { name: NAMES.logoStorage, type: 'meta.folder' },
+            common: { name: NAMES.storage, type: 'meta.user' },
             native: {},
         });
+        await this.migrateLogos();
         await this.extendObject('stations', { type: 'folder', common: { name: NAMES.stations }, native: {} });
         for (const s of stations) {
             await this.extendObject(`stations.${s.id}`, {
@@ -440,11 +442,15 @@ class Webradio extends utils.Adapter {
             }
             const channel = await this.getObjectAsync(`stations.${s.id}`);
             const native = /** @type {Record<string, unknown>} */ (channel?.native || {});
-            let file = String(native.logoFile || '');
+            let file = normalizeLogoFile(native.logoFile);
+            if (file !== native.logoFile && file) {
+                // 0.0.1 stored the bare file name of the old mount point
+                await this.extendObject(`stations.${s.id}`, { native: { logoFile: file } });
+            }
             if (native.logoSource !== s.logo || !file || !(await this.fileExistsAsync(this.mount, file))) {
                 try {
                     const img = await downloadLogo(s.logo, this.userAgent);
-                    file = `${s.id}.${img.ext}`;
+                    file = logoPath(`${s.id}.${img.ext}`);
                     await this.writeFileAsync(this.mount, file, img.data);
                     await this.extendObject(`stations.${s.id}`, { native: { logoSource: s.logo, logoFile: file } });
                 } catch (e) {
@@ -456,11 +462,59 @@ class Webradio extends utils.Adapter {
             this.logoFiles.set(s.id, file);
             await this.setState(`stations.${s.id}.logo`, { val: this.logoUrl(s.id), ack: true });
         }
+        await this.removeStaleLogos(new Set(this.logoFiles.values()));
     }
 
-    /** @returns {string} Id of the mount point of the logos */
+    /**
+     * Deletes logo files of stations that are no longer favourites.
+     *
+     * @param {Set<string>} keep - Paths below the storage mount point
+     */
+    async removeStaleLogos(keep) {
+        try {
+            const entries = await this.readDirAsync(this.mount, LOGO_DIR);
+            for (const e of entries || []) {
+                const path = logoPath(e.file);
+                if (!e.isDir && !keep.has(path)) {
+                    await this.delFileAsync(this.mount, path);
+                }
+            }
+        } catch {
+            // no logo folder yet
+        }
+    }
+
+    /**
+     * Moves the logos of version 0.0.1 (own mount point `<ns>.logos`) into the file storage and removes the old one.
+     */
+    async migrateLogos() {
+        try {
+            const res = await migrateOldLogos(this.namespace, {
+                hasObject: async id => !!(await this.getForeignObjectAsync(id)),
+                readDir: async (mount, path) => (await this.readDirAsync(mount, path)) || [],
+                readFile: async (mount, path) => {
+                    const r = await this.readFileAsync(mount, path);
+                    return Buffer.isBuffer(r?.file) ? r.file : Buffer.from(String(r?.file ?? ''));
+                },
+                writeFile: (mount, path, data) => this.writeFileAsync(mount, path, data),
+                delFile: (mount, path) => this.delFileAsync(mount, path),
+                delObject: id => this.delForeignObjectAsync(id),
+            });
+            if (res) {
+                this.log.info(
+                    `Station logos moved to ${this.mount}/${LOGO_DIR} (${res.moved.length} file(s)${
+                        res.failed.length ? `, ${res.failed.length} will be downloaded again` : ''
+                    }); the old folder ${this.namespace}.logos was removed`,
+                );
+            }
+        } catch (e) {
+            this.log.warn(`Station logos could not be moved to ${this.mount}: ${e.message}`);
+        }
+    }
+
+    /** @returns {string} Id of the mount point of the file storage */
     get mount() {
-        return `${this.namespace}.${MOUNT}`;
+        return `${this.namespace}.${STORAGE}`;
     }
 
     /**

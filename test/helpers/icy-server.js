@@ -50,6 +50,11 @@ async function startIcyServer(o) {
             res.end('#EXTM3U\n#EXT-X-VERSION:3\n');
             return;
         }
+        if (req.url === '/logo.png') {
+            res.writeHead(200, { 'Content-Type': 'image/png' });
+            res.end(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]));
+            return;
+        }
         if (req.url === '/broken') {
             res.writeHead(404).end();
             return;

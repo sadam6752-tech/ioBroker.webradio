@@ -36,8 +36,10 @@ audio to FLAC 48 kHz. Dune HD and other players get the station URL directly; a 
 **Stations** — type a name (and a country code if you like) in the search, choose a result and press
 _Add to favourites_; the station lands in the table, save the settings. A row can also be filled by hand: name,
 stream URL (`http://` or `https://`, a playlist `.pls`/`.m3u` works too), logo URL, tags. The logos are copied into
-the file storage of the instance (`webradio.0.logos`) and served by the stream server, because the logos of radio
-stations often move or vanish.
+the file storage of the instance, `webradio.0.storage` → `logos/<station>.<ext>` (shown in the admin under
+**Files**, taken along by backups), and served by the stream server at `/logo/<station>`, because the logos of
+radio stations often move or vanish. Version 0.0.1 kept them in `webradio.0.logos`; they are moved once at the start
+and the old folder is removed.
 
 **Players** — with _Find … by themselves_ every satellite of ioBroker.assistant with a media player and every panel of
 ioBroker.satellite-display becomes a player (a satellite that is also a panel is taken once, as the panel). Rows add
@@ -94,6 +96,13 @@ stations themselves see the same User-Agent and the address of the ioBroker host
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- The stream server takes the next free port when the configured one is in use, also one that another instance
+  declares (js-controller 8)
+- Station logos are kept in the file storage `webradio.0.storage/logos`; the folder `webradio.0.logos` of 0.0.1 is
+  moved once
 
 ### 0.0.1 (2026-11-25)
 
