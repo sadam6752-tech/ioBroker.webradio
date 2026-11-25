@@ -33,7 +33,9 @@ describe('help', () => {
     });
 
     it('marks play and stop as writing, the rest as reading', () => {
-        const writing = COMMANDS.filter(c => c.write).map(c => c.command).sort();
+        const writing = COMMANDS.filter(c => c.write)
+            .map(c => c.command)
+            .sort();
         assert.deepEqual(writing, ['play', 'stop']);
     });
 

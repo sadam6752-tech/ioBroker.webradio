@@ -135,6 +135,9 @@ stations themselves see the same User-Agent and the address of the ioBroker host
   `info.stations` and `info.targets` for it
 - `search_stations` answers with the filters it sent (`query`) and a hint when they found nothing; `play` says whether
   it took a favourite, a catalog station or a URL (`source`, `stationId`, `uuid`)
+- Stations whose stream server ends the HTTP status line without CR (e.g. RPR1) play again; playlists are recognised
+  by their content (m3u, pls, asx, xspf, HLS) instead of the extension, and players that play by themselves get the
+  stream inside a playlist
 
 ### 0.0.1 (2026-11-25)
 

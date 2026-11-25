@@ -1,7 +1,14 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { parseStreamTitle, IcyStripper, parsePlaylist, kindOf, decodeText } = require('../../lib/icy');
+const {
+    parseStreamTitle,
+    IcyStripper,
+    parsePlaylist,
+    kindOf,
+    decodeText,
+    looksLikePlaylist,
+} = require('../../lib/icy');
 const { metaBlock } = require('../helpers/icy-server');
 
 /**
@@ -27,12 +34,18 @@ async function strip(metaInt, input, chunkSize) {
 
 describe('ICY', () => {
     it('reads StreamTitle, also with quotes and semicolons inside', () => {
-        assert.equal(parseStreamTitle("StreamTitle='Queen - Bohemian Rhapsody';StreamUrl='';"), 'Queen - Bohemian Rhapsody');
+        assert.equal(
+            parseStreamTitle("StreamTitle='Queen - Bohemian Rhapsody';StreamUrl='';"),
+            'Queen - Bohemian Rhapsody',
+        );
         assert.equal(parseStreamTitle("StreamTitle='Guns N' Roses - Don't Cry';"), "Guns N' Roses - Don't Cry");
         assert.equal(parseStreamTitle("StreamTitle='A;B - C';StreamUrl='x';"), 'A;B - C');
         assert.equal(parseStreamTitle("StreamTitle='';"), '');
         assert.equal(parseStreamTitle('StreamUrl=x;'), null);
-        assert.equal(parseStreamTitle(Buffer.from("StreamTitle='Кино - Группа крови';\0\0\0", 'utf8')), 'Кино - Группа крови');
+        assert.equal(
+            parseStreamTitle(Buffer.from("StreamTitle='Кино - Группа крови';\0\0\0", 'utf8')),
+            'Кино - Группа крови',
+        );
     });
 
     it('decodes Latin-1 when the bytes are no UTF-8', () => {
@@ -84,12 +97,62 @@ describe('ICY', () => {
         assert.equal(parsePlaylist('ftp://x/y', 'http://b.example/'), null);
     });
 
-    it('tells audio, playlists and HLS apart', () => {
+    it('finds the stream in .asx and .xspf, decodes XML entities, takes the first http(s) entry', () => {
+        assert.deepEqual(
+            parsePlaylist(
+                '<asx version="3.0"><entry><ref href="mms://x/y"/><ref href="http://a.example/s?a=1&amp;b=2"/></entry></asx>',
+                'http://b/',
+            ),
+            { url: 'http://a.example/s?a=1&b=2' },
+        );
+        assert.deepEqual(
+            parsePlaylist(
+                '<?xml version="1.0"?><playlist><trackList><track><location>https://a.example/live</location></track></trackList></playlist>',
+                'http://b/',
+            ),
+            { url: 'https://a.example/live' },
+        );
+        assert.deepEqual(
+            parsePlaylist('\uFEFF[playlist]\r\nFile1=ftp://no\r\nFile2=http://a.example/2\r\n', 'http://b/'),
+            {
+                url: 'http://a.example/2',
+            },
+        );
+        assert.deepEqual(parsePlaylist('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nchunks.m3u8', 'http://b/x'), {
+            hls: true,
+        });
+    });
+
+    it('decides by the Content-Type, and looks at the body when the type or the extension says nothing sure', () => {
         assert.equal(kindOf('audio/mpeg', 'http://x/live'), 'audio');
-        assert.equal(kindOf('audio/aacp', 'http://x/live.aacp'), 'audio');
+        assert.equal(kindOf('audio/aac', 'https://x/atsw-rpr1webradio-aac-128'), 'audio');
         assert.equal(kindOf('audio/x-scpls', 'http://x/listen'), 'playlist');
-        assert.equal(kindOf('text/plain', 'http://x/listen.m3u'), 'playlist');
-        assert.equal(kindOf('application/vnd.apple.mpegurl; charset=utf-8', 'http://x/a'), 'hls');
-        assert.equal(kindOf('', 'http://x/master.m3u8?token=1'), 'hls');
+        assert.equal(kindOf('audio/x-mpegurl', 'http://x/listen'), 'playlist');
+        assert.equal(kindOf('application/vnd.apple.mpegurl; charset=utf-8', 'http://x/a'), 'playlist');
+        assert.equal(kindOf('video/x-ms-asx', 'http://x/a'), 'playlist');
+        assert.equal(kindOf('text/plain', 'http://x/listen.m3u'), 'sniff');
+        assert.equal(kindOf('audio/mpeg', 'http://x/audio.m3u'), 'sniff', 'the extension makes it look');
+        assert.equal(kindOf('', 'http://x/master.m3u8?token=1'), 'sniff');
+        assert.equal(kindOf('application/octet-stream', 'http://x/stream'), 'sniff');
+        assert.equal(kindOf('text/html', 'http://x/'), 'sniff');
+    });
+
+    it('tells a playlist body from audio by the first bytes', () => {
+        for (const text of [
+            '#EXTM3U\n',
+            '\uFEFF#EXTM3U',
+            '  [playlist]\nFile1=x',
+            '[Playlist]',
+            '<asx version="3.0">',
+            '<?xml version="1.0"?><playlist>',
+            'http://a/live\n',
+            '#EXTINF:-1,X\n',
+        ]) {
+            assert.equal(looksLikePlaylist(Buffer.from(text)), true, text);
+        }
+        assert.equal(looksLikePlaylist(Buffer.from([0xff, 0xfb, 0x90, 0x64, 0, 0])), false, 'MP3 frame');
+        assert.equal(looksLikePlaylist(Buffer.from('ID3\x04\x00')), false, 'ID3');
+        assert.equal(looksLikePlaylist(Buffer.from('OggS')), false);
+        assert.equal(looksLikePlaylist(Buffer.alloc(0)), false);
     });
 });

@@ -53,7 +53,12 @@ describe('file storage', () => {
 
     it('moves the logos of the old mount point into storage/logos and removes the old one', async () => {
         const f = fakeFiles({
-            'webradio.0.logos': { 'swr3.png': 'PNG1', 'record.jpg': 'JPG', 'broken.png': 'unreadable', 'x y.png': 'odd' },
+            'webradio.0.logos': {
+                'swr3.png': 'PNG1',
+                'record.jpg': 'JPG',
+                'broken.png': 'unreadable',
+                'x y.png': 'odd',
+            },
             'webradio.0.storage': {},
         });
         const res = await migrateOldLogos('webradio.0', f.api);

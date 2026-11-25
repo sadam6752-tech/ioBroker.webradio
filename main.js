@@ -13,7 +13,7 @@ const { bindOf } = require('./lib/resources');
 const { listenOnFreePort } = require('./lib/port');
 const { STORAGE, LOGO_DIR, logoPath, normalizeLogoFile, migrateOldLogos } = require('./lib/storage');
 const { RadioBrowser, searchParams, sentQuery } = require('./lib/radio-browser');
-const { Channel, StreamServer, SourceReader } = require('./lib/proxy');
+const { Channel, StreamServer, SourceReader, playableUrl } = require('./lib/proxy');
 const { downloadLogo, MIME } = require('./lib/logos');
 const { stationList, targetList } = require('./lib/lists');
 const {
@@ -50,6 +50,8 @@ const {
 
 /** Port of the stream server, next to airplay-receiver (8095) */
 const DEFAULT_PORT = 8096;
+/** How long a player that plays by itself waits for the stream URL inside a playlist */
+const DIRECT_URL_TIMEOUT_MS = 8000;
 
 /**
  * @param {unknown} adapter - Adapter
@@ -584,7 +586,10 @@ class Webradio extends utils.Adapter {
             // a new URL every time: a player that gets the same URL again may keep playing the old stream
             url = `http://${streamHost(this.config.urlHost)}:${this.httpPort}${r.channel.path}?s=${station.id || 'url'}&n=${++this.counter}`;
         } else {
-            url = station.url;
+            url = await this.directUrl(station);
+            if (r.station !== station) {
+                return ''; // another station was chosen meanwhile
+            }
         }
         r.url = url;
         r.playing = true;
@@ -613,6 +618,30 @@ class Webradio extends utils.Adapter {
             void this.catalog.click(station.uuid);
         }
         return '';
+    }
+
+    /**
+     * The URL for a player that plays by itself: the stream inside a playlist (m3u, pls, asx, xspf), which many players
+     * cannot read; the station URL when that is the stream, is HLS or does not answer in time.
+     *
+     * @param {Station} station - Station
+     * @returns {Promise<string>} URL
+     */
+    async directUrl(station) {
+        /** @type {unknown} */
+        let timer = null;
+        const late = new Promise(resolve => {
+            timer = this.timers.setTimeout(() => resolve(station.url), DIRECT_URL_TIMEOUT_MS);
+        });
+        try {
+            const url = await Promise.race([playableUrl(station.url, this.userAgent).catch(() => station.url), late]);
+            if (url !== station.url) {
+                this.log.debug(`${station.name}: the playlist names ${url}`);
+            }
+            return String(url);
+        } finally {
+            this.timers.clearTimeout(timer);
+        }
     }
 
     /**

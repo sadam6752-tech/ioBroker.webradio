@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const { spawnSync } = require('node:child_process');
 const ffmpegPath = require('ffmpeg-static');
-const { openSource, SourceReader, Channel, StreamServer, ffmpegArgs } = require('../../lib/proxy');
+const { openSource, playableUrl, SourceReader, Channel, StreamServer, ffmpegArgs } = require('../../lib/proxy');
 const { startIcyServer } = require('../helpers/icy-server');
 
 const log = { debug: () => undefined, info: () => undefined, warn: () => undefined, error: () => undefined };
@@ -24,7 +24,8 @@ function fetchBytes(url, headers = {}, bytes = 0) {
         const req = http.get(url, { headers }, res => {
             const parts = [];
             let size = 0;
-            const done = () => resolve({ status: res.statusCode || 0, headers: res.headers, body: Buffer.concat(parts) });
+            const done = () =>
+                resolve({ status: res.statusCode || 0, headers: res.headers, body: Buffer.concat(parts) });
             res.on('data', d => {
                 parts.push(d);
                 size += d.length;
@@ -48,7 +49,22 @@ describe('stream proxy', function () {
     before(async () => {
         const r = spawnSync(
             String(ffmpegPath),
-            ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1', '-c:a', 'libmp3lame', '-b:a', '64k', '-f', 'mp3', 'pipe:1'],
+            [
+                '-hide_banner',
+                '-loglevel',
+                'error',
+                '-f',
+                'lavfi',
+                '-i',
+                'sine=frequency=440:duration=1',
+                '-c:a',
+                'libmp3lame',
+                '-b:a',
+                '64k',
+                '-f',
+                'mp3',
+                'pipe:1',
+            ],
             { maxBuffer: 10 * 1024 * 1024 },
         );
         assert.equal(r.status, 0, String(r.stderr));
@@ -76,9 +92,62 @@ describe('stream proxy', function () {
             assert.ok('res' in src, path);
             src.res.destroy();
         }
-        assert.deepEqual(await openSource(`${radio.base}/hls.m3u8`, 'x'), { hls: `${radio.base}/hls.m3u8` });
+        assert.deepEqual(await openSource(`${radio.base}/hls.m3u8`, 'x'), {
+            hls: `${radio.base}/hls.m3u8`,
+            entry: `${radio.base}/hls.m3u8`,
+        });
         await assert.rejects(openSource(`${radio.base}/broken`, 'x'), /HTTP 404/);
         await assert.rejects(openSource('file:///etc/passwd', 'x'), /unsupported protocol/);
+    });
+
+    it('plays a .m3u URL that is a redirect chain to a server with a bare LF in its status line (RPR1)', async () => {
+        const src = await openSource(`${radio.base}/rpr.m3u`, 'x');
+        assert.ok('res' in src);
+        assert.equal(src.url, `${radio.rawBase}/webradio/aac-128`);
+        assert.equal(src.contentType, 'audio/aac');
+        assert.equal(src.metaInt, 2000);
+        assert.equal(src.entry, `${radio.base}/rpr.m3u`, 'the redirects are not resolved for direct players');
+        const titles = [];
+        const reader = new SourceReader({
+            url: `${radio.base}/rpr.m3u`,
+            name: 'rpr',
+            userAgent: 'x',
+            timers,
+            log,
+            onTitle: t => titles.push(t),
+        });
+        reader.start(src);
+        for (let i = 0; i < 50 && titles.length < 1; i++) {
+            await new Promise(r => setTimeout(r, 50));
+        }
+        reader.stop();
+        assert.equal(titles[0], 'Artist - First');
+    });
+
+    it('reads playlists by their content, whatever the type or extension says', async () => {
+        for (const path of ['/octet.m3u', '/text.pls', '/nested.m3u', '/list.asx', '/list.xspf', '/audio.m3u']) {
+            const src = await openSource(`${radio.base}${path}`, 'x');
+            assert.ok('res' in src, path);
+            assert.match(src.url, /\/(station|audio\.m3u)(\?a=1&b=2)?$/, path);
+            // the sniffed bytes are not lost: the stream starts with the first audio byte
+            const first = await new Promise(resolve => src.res.once('data', resolve).resume());
+            assert.equal(first[0], mp3[0], path);
+            src.res.destroy();
+        }
+        assert.deepEqual(await openSource(`${radio.base}/hls-in-mpegurl`, 'x'), {
+            hls: `${radio.base}/hls-in-mpegurl`,
+            entry: `${radio.base}/hls-in-mpegurl`,
+        });
+        await assert.rejects(openSource(`${radio.base}/loop.m3u`, 'x'), /too many playlists/);
+        await assert.rejects(openSource(`${radio.base}/empty.m3u`, 'x'), /names no stream/);
+    });
+
+    it('gives a player that plays by itself the stream inside a playlist, but no redirect target', async () => {
+        assert.equal(await playableUrl(`${radio.base}/nested.m3u`, 'x'), `${radio.base}/station`);
+        assert.equal(await playableUrl(`${radio.base}/list.asx`, 'x'), `${radio.base}/station?a=1&b=2`);
+        assert.equal(await playableUrl(`${radio.base}/rpr.m3u`, 'x'), `${radio.base}/rpr.m3u`);
+        assert.equal(await playableUrl(`${radio.base}/redirect`, 'x'), `${radio.base}/redirect`);
+        assert.equal(await playableUrl(`${radio.base}/audio.m3u`, 'x'), `${radio.base}/audio.m3u`);
     });
 
     it('reads the titles and the audio without the metadata', async () => {
@@ -103,7 +172,7 @@ describe('stream proxy', function () {
     });
 
     it('gives up on a broken station after its retries', async () => {
-        const fast = { setTimeout: (cb) => setTimeout(cb, 1), clearTimeout: h => clearTimeout(/** @type {any} */ (h)) };
+        const fast = { setTimeout: cb => setTimeout(cb, 1), clearTimeout: h => clearTimeout(/** @type {any} */ (h)) };
         const why = await new Promise(resolve => {
             new SourceReader({
                 url: `${radio.base}/broken`,
@@ -142,7 +211,9 @@ describe('stream proxy', function () {
             onTitle: t => titles.push(t),
             onEnd: () => undefined,
         });
-        const server = new StreamServer(log, async id => (id === 'swr3' ? { data: Buffer.from('PNG'), type: 'image/png' } : null));
+        const server = new StreamServer(log, async id =>
+            id === 'swr3' ? { data: Buffer.from('PNG'), type: 'image/png' } : null,
+        );
         server.add(channel);
         const port = await server.listen(0, '127.0.0.1');
         try {

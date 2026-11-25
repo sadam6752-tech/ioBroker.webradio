@@ -99,7 +99,11 @@ describe('port of the stream server', () => {
     it('gives up with a clear error after the tries, and passes other errors on', async () => {
         const inUse = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
         await assert.rejects(
-            listenOnFreePort(8096, { findFree: async p => p, heldBy: async () => [], listen: async () => Promise.reject(inUse) }),
+            listenOnFreePort(8096, {
+                findFree: async p => p,
+                heldBy: async () => [],
+                listen: async () => Promise.reject(inUse),
+            }),
             /no free port from 8096 on \(8096: another program; 8097/,
         );
         await assert.rejects(

@@ -292,6 +292,26 @@ tests.integration(path.join(__dirname, '..'), {
                 await send('stop', { target: 'cinema' });
             });
 
+            it('plays a .m3u redirect chain through the proxy and gives a direct player the stream of a playlist', async function () {
+                this.timeout(30_000);
+                // like RPR1: the .m3u is no playlist, two redirects, a stream server with a bare LF in its status line
+                const res = await send('play', { station: `${radio.base}/rpr.m3u`, target: 'kitchen' });
+                assert.equal(res.ok, true, JSON.stringify(res));
+                const url = await waitFor(
+                    `${SAT}.controls.player.url`,
+                    v => typeof v === 'string' && v.includes('/play/kitchen.flac?s=url'),
+                );
+                const stream = await fetchBytes(url, 4000);
+                assert.equal(stream.status, 200);
+                assert.equal(stream.body.subarray(0, 4).toString('latin1'), 'fLaC');
+                await waitFor('webradio.0.targets.kitchen.title', v => v === 'Test Artist - Test Song');
+                await send('stop', { target: 'kitchen' });
+                // Dune HD plays by itself: it gets the stream inside the playlist, not the playlist
+                await send('play', { station: `${radio.base}/nested.m3u`, target: 'cinema' });
+                await waitFor(`${DUNE}.media.playUrl`, v => v === `${radio.base}/station`);
+                await send('stop', { target: 'cinema' });
+            });
+
             it('skips a player whose objects were deleted, without writing to it', async function () {
                 this.timeout(20_000);
                 const res = await send('play', { station: 'test', target: 'gone' });

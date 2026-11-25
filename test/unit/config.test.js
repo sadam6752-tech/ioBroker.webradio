@@ -38,7 +38,13 @@ describe('stations', () => {
 
     it('reads the table: skips rows without name or URL, makes ids unique, splits tags', () => {
         const { stations, problems } = normalizeStations([
-            { enabled: true, name: 'SWR3', url: 'https://liveradio.swr.de/sw282p3/swr3/', logo: 'https://x/l.png', tags: 'pop, news;pop' },
+            {
+                enabled: true,
+                name: 'SWR3',
+                url: 'https://liveradio.swr.de/sw282p3/swr3/',
+                logo: 'https://x/l.png',
+                tags: 'pop, news;pop',
+            },
             { enabled: true, name: 'SWR3', url: 'http://other/stream' },
             { enabled: false, name: 'Off', url: 'http://off/' },
             { enabled: true, name: '', url: 'http://x/' },
@@ -110,9 +116,20 @@ describe('players', () => {
         const { targets, problems } = buildTargets(
             [
                 { enabled: true, name: 'Kino', urlState: 'dune-hd-remote.0.media.playUrl' },
-                { enabled: true, name: 'Gästezimmer', urlState: 'assistant.0.satellites.Gast.controls.player.url', stream: 'mp3' },
+                {
+                    enabled: true,
+                    name: 'Gästezimmer',
+                    urlState: 'assistant.0.satellites.Gast.controls.player.url',
+                    stream: 'mp3',
+                },
                 { enabled: false, name: 'Bad', urlState: 'assistant.0.satellites.Bad.controls.player.url' },
-                { enabled: true, name: 'Sonos', urlState: 'sonos.0.x.url', stopState: 'sonos.0.x.stop', volumeState: '-' },
+                {
+                    enabled: true,
+                    name: 'Sonos',
+                    urlState: 'sonos.0.x.url',
+                    stopState: 'sonos.0.x.stop',
+                    volumeState: '-',
+                },
                 { enabled: true, name: 'No state', urlState: '' },
             ],
             found,
@@ -133,10 +150,13 @@ describe('players', () => {
     });
 
     it('gives the same id a suffix', () => {
-        const { targets } = buildTargets([], [
-            { name: 'Mini', urlState: 'assistant.0.satellites.Mini.controls.p.url' },
-            { name: 'mini', urlState: 'satellite-display.0.satellites.mini.media.url' },
-        ]);
+        const { targets } = buildTargets(
+            [],
+            [
+                { name: 'Mini', urlState: 'assistant.0.satellites.Mini.controls.p.url' },
+                { name: 'mini', urlState: 'satellite-display.0.satellites.mini.media.url' },
+            ],
+        );
         assert.deepEqual(
             targets.map(t => t.id),
             ['mini', 'mini_2'],
@@ -144,18 +164,26 @@ describe('players', () => {
     });
 
     it('sends ESPHome players FLAC through the proxy, the others the station URL', () => {
-        const [sat, panel, dune, custom] = buildTargets([], [
-            { name: 'a', urlState: 'assistant.0.satellites.a.controls.p.url' },
-            { name: 'b', urlState: 'satellite-display.0.satellites.b.media.url' },
-            { name: 'c', urlState: 'dune-hd-remote.0.media.playUrl' },
-            { name: 'd', urlState: 'other.0.url' },
-        ]).targets;
+        const [sat, panel, dune, custom] = buildTargets(
+            [],
+            [
+                { name: 'a', urlState: 'assistant.0.satellites.a.controls.p.url' },
+                { name: 'b', urlState: 'satellite-display.0.satellites.b.media.url' },
+                { name: 'c', urlState: 'dune-hd-remote.0.media.playUrl' },
+                { name: 'd', urlState: 'other.0.url' },
+            ],
+        ).targets;
         assert.deepEqual(streamFor(sat), { direct: false, codec: 'flac', sampleRate: 48000, channels: 1 });
         assert.deepEqual(streamFor(panel), { direct: false, codec: 'flac', sampleRate: 48000, channels: 1 });
         assert.deepEqual(streamFor(dune), { direct: true });
         assert.deepEqual(streamFor(custom), { direct: true });
         assert.deepEqual(streamFor({ ...sat, stream: 'direct' }), { direct: true });
-        assert.deepEqual(streamFor({ ...dune, stream: 'mp3' }), { direct: false, codec: 'mp3', sampleRate: 44100, channels: 2 });
+        assert.deepEqual(streamFor({ ...dune, stream: 'mp3' }), {
+            direct: false,
+            codec: 'mp3',
+            sampleRate: 44100,
+            channels: 2,
+        });
     });
 
     it('reads stop values as typed', () => {
@@ -175,20 +203,46 @@ describe('names and rooms', () => {
     ];
 
     it('finds exact names first, then the start, then a part', () => {
-        assert.deepEqual(findByName(stations, 'swr 3').map(s => s.id), ['swr3']);
-        assert.deepEqual(findByName(stations, 'Radio Record').map(s => s.id), ['radio_record']);
-        assert.deepEqual(findByName(stations, 'deutschland').map(s => s.id), ['deutschlandfunk']);
-        assert.deepEqual(findByName(stations, 'record').map(s => s.id), ['record_trance']);
-        assert.deepEqual(findByName(stations, 'cord').map(s => s.id), ['radio_record', 'record_trance']);
-        assert.deepEqual(findByName(stations, 'play deutschlandfunk please').map(s => s.id), ['deutschlandfunk']);
+        assert.deepEqual(
+            findByName(stations, 'swr 3').map(s => s.id),
+            ['swr3'],
+        );
+        assert.deepEqual(
+            findByName(stations, 'Radio Record').map(s => s.id),
+            ['radio_record'],
+        );
+        assert.deepEqual(
+            findByName(stations, 'deutschland').map(s => s.id),
+            ['deutschlandfunk'],
+        );
+        assert.deepEqual(
+            findByName(stations, 'record').map(s => s.id),
+            ['record_trance'],
+        );
+        assert.deepEqual(
+            findByName(stations, 'cord').map(s => s.id),
+            ['radio_record', 'record_trance'],
+        );
+        assert.deepEqual(
+            findByName(stations, 'play deutschlandfunk please').map(s => s.id),
+            ['deutschlandfunk'],
+        );
         assert.deepEqual(findByName(stations, 'xyz'), []);
         assert.deepEqual(findByName(stations, ''), []);
     });
 
     it('finds the room of a player through enum.rooms, in any language', () => {
-        const [t] = buildTargets([], [{ name: 'Gast', urlState: 'assistant.0.satellites.Gast.controls.p.url' }]).targets;
+        const [t] = buildTargets(
+            [],
+            [{ name: 'Gast', urlState: 'assistant.0.satellites.Gast.controls.p.url' }],
+        ).targets;
         const rooms = /** @type {any} */ ({
-            'enum.rooms.guest': { common: { name: { en: 'Guest room', de: 'Gästezimmer', ru: 'Гостевая' }, members: ['assistant.0.satellites.Gast'] } },
+            'enum.rooms.guest': {
+                common: {
+                    name: { en: 'Guest room', de: 'Gästezimmer', ru: 'Гостевая' },
+                    members: ['assistant.0.satellites.Gast'],
+                },
+            },
             'enum.rooms.kitchen': { common: { name: 'Kitchen', members: ['hue.0.lamp'] } },
         });
         const found = roomsOf(t, rooms);
@@ -218,7 +272,10 @@ describe('helpers', () => {
 
     it('lists writable media.url states of other adapters for the admin', () => {
         const objects = /** @type {any} */ ({
-            'dune-hd-remote.0.media.playUrl': { type: 'state', common: { role: 'media.url', name: 'Play URL', write: true } },
+            'dune-hd-remote.0.media.playUrl': {
+                type: 'state',
+                common: { role: 'media.url', name: 'Play URL', write: true },
+            },
             'webradio.0.targets.x.streamUrl': { type: 'state', common: { role: 'media.url', write: true } },
             'x.0.read': { type: 'state', common: { role: 'media.url', write: false } },
         });
@@ -229,7 +286,9 @@ describe('helpers', () => {
 
     it('names objects with custom settings', () => {
         assert.deepEqual(
-            customIds(/** @type {any} */ ({ a: { common: { custom: { 'history.0': {} } } }, b: { common: { custom: {} } } })),
+            customIds(
+                /** @type {any} */ ({ a: { common: { custom: { 'history.0': {} } } }, b: { common: { custom: {} } } }),
+            ),
             ['a'],
         );
     });
