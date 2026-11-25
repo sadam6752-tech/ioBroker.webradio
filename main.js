@@ -419,6 +419,17 @@ class Webradio extends utils.Adapter {
                 const def = states.find(s => s[0] === key)?.[4];
                 await this.setState(`targets.${t.id}.${key}`, { val: def ?? '', ack: true });
             }
+            // before 0.0.2 there was no lastStation: take the selected favourite, so resume plays what played last
+            if (!(await this.getStateAsync(`targets.${t.id}.lastStation`))?.val) {
+                const selected = String((await this.getStateAsync(`targets.${t.id}.station`))?.val || '');
+                const fav = stations.find(s => s.id === selected);
+                if (fav) {
+                    await this.setState(`targets.${t.id}.lastStation`, {
+                        val: JSON.stringify(rememberStation(fav)),
+                        ack: true,
+                    });
+                }
+            }
         }
         await this.removeStale('stations', new Set(stations.map(s => `${this.namespace}.stations.${s.id}`)));
         await this.removeStale('targets', new Set(targets.map(t => `${this.namespace}.targets.${t.id}`)));

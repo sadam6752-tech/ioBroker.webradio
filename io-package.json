@@ -1,8 +1,21 @@
 {
     "common": {
         "name": "webradio",
-        "version": "0.0.1",
+        "version": "0.0.2",
         "news": {
+            "0.0.2": {
+                "en": "Large station logos are scaled down instead of left out; resume the last station, next and previous favourite; sleep timer with volume fade-out; new buttons in the vis widget",
+                "de": "Große Senderlogos werden verkleinert statt weggelassen; letzten Sender fortsetzen, nächster und vorheriger Lieblingssender; Schlaftimer mit Ausblenden der Lautstärke; neue Tasten im vis-Widget",
+                "ru": "Большие логотипы станций уменьшаются, а не пропускаются; включение последней станции, следующая и предыдущая из избранного; таймер сна с плавным снижением громкости; новые кнопки в виджете vis",
+                "pt": "Logótipos grandes das estações são reduzidos em vez de omitidos; retomar a última estação, favorita seguinte e anterior; temporizador para dormir com redução gradual do volume; novos botões no widget vis",
+                "nl": "Grote zenderlogo's worden verkleind in plaats van weggelaten; laatste zender hervatten, volgende en vorige favoriet; slaaptimer met uitfaden van het volume; nieuwe knoppen in de vis-widget",
+                "fr": "Les grands logos des stations sont réduits au lieu d'être omis ; reprise de la dernière station, favorite suivante et précédente ; minuterie de sommeil avec baisse progressive du volume ; nouveaux boutons dans le widget vis",
+                "it": "I loghi grandi delle stazioni vengono ridotti invece di essere omessi; riprendi l'ultima stazione, preferita successiva e precedente; timer di spegnimento con dissolvenza del volume; nuovi pulsanti nel widget vis",
+                "es": "Los logotipos grandes de las emisoras se reducen en lugar de omitirse; reanudar la última emisora, favorita siguiente y anterior; temporizador de apagado con bajada gradual del volumen; nuevos botones en el widget de vis",
+                "pl": "Duże logo stacji są zmniejszane zamiast pomijane; wznowienie ostatniej stacji, następna i poprzednia ulubiona; wyłącznik czasowy ze ściszaniem głośności; nowe przyciski w widżecie vis",
+                "uk": "Великі логотипи станцій зменшуються, а не пропускаються; увімкнення останньої станції, наступна й попередня з улюблених; таймер сну з плавним зниженням гучності; нові кнопки у віджеті vis",
+                "zh-cn": "大型电台台标会被缩小而不是被省略；继续播放上一个电台、下一个和上一个收藏；带音量渐弱的睡眠定时器；vis 小部件中的新按钮"
+            },
             "0.0.1": {
                 "en": "First version: favourite stations with logos, search in radio-browser.info, players found automatically, stream proxy with ffmpeg and ICY titles, playlists and HLS, vis widget \"Radio\", help for AI agents",
                 "de": "Erste Version: Lieblingssender mit Logos, Suche in radio-browser.info, automatisch gefundene Player, Stream-Proxy mit ffmpeg und ICY-Titeln, Playlists und HLS, vis-Widget \"Radio\", Hilfe für KI-Agenten",

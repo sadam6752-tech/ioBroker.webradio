@@ -134,7 +134,7 @@ stations themselves see the same User-Agent and the address of the ioBroker host
     ### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
+### 0.0.2 (2026-11-25)
 
 - Large station logos are scaled down to a PNG of 256 px instead of being left out
 - Resume the last station, next and previous favourite: buttons, messages and the vis widget

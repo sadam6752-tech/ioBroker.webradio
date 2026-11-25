@@ -135,6 +135,11 @@ tests.integration(path.join(__dirname, '..'), {
                     native: {},
                 });
                 await harness.objects.writeFileAsync('webradio.0.logos', 'playlist_radio.png', Buffer.from('OLD'));
+                // a player that played before 0.0.2: its station state is set, lastStation does not exist yet
+                await harness.states.setStateAsync('webradio.0.targets.cinema.station', {
+                    val: 'playlist_radio',
+                    ack: true,
+                });
                 await harness.startAdapterAndWait(true);
                 // the satellite "Gone" was found at the start and is removed now (like a deleted satellite)
                 await harness.objects.delObjectAsync(`${GONE}.controls.player.url`);
@@ -208,6 +213,13 @@ tests.integration(path.join(__dirname, '..'), {
                 this.timeout(60_000);
                 assert.equal(await state('webradio.0.stations.test_radio.url'), `${radio.base}/station`);
                 assert.equal(await state('webradio.0.info.connection'), true);
+                const last = JSON.parse(String(await state('webradio.0.targets.cinema.lastStation')));
+                assert.equal(last.id, 'playlist_radio', 'lastStation taken from the station state of an update');
+                assert.equal(
+                    await state('webradio.0.targets.kitchen.lastStation'),
+                    '',
+                    'nothing selected: stays empty',
+                );
                 const kitchen = await harness.objects.getObjectAsync('webradio.0.targets.kitchen');
                 assert.equal(kitchen?.common?.desc, `${SAT}.controls.player.url`);
                 assert.ok(await harness.objects.getObjectAsync('webradio.0.targets.cinema.station'));
