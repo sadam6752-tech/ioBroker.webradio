@@ -41,5 +41,6 @@
     "Export the favourites into the field": "Експортувати улюблені в поле",
     "Add the stations of the field to the table": "Додати станції з поля до таблиці",
     "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON або по одному URL у рядку",
-    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Вставте плейлист і додайте його станції або експортуйте таблицю й скопіюйте текст. Станції з URL, який уже є в таблиці, пропускаються. Збережіть налаштування, щоб зміни залишилися."
+    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Вставте плейлист і додайте його станції або експортуйте таблицю й скопіюйте текст. Станції з URL, який уже є в таблиці, пропускаються. Збережіть налаштування, щоб зміни залишилися.",
+    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Показувати обкладинку пісні, що грає (пошук в iTunes Search API: виконавець і назва йдуть до Apple)"
 }

@@ -25,6 +25,7 @@ const {
     SleepTimer,
 } = require('./lib/control');
 const { exportStations, importStations } = require('./lib/transfer');
+const { CoverFinder } = require('./lib/cover');
 const { stationList, targetList } = require('./lib/lists');
 const {
     normalizeStations,
@@ -101,6 +102,8 @@ class Webradio extends utils.Adapter {
         this.missing = new Set();
         this.counter = 0;
         this.catalog = new RadioBrowser({ userAgent: 'ioBroker.webradio' });
+        /** @type {CoverFinder | null} */
+        this.covers = null;
         /** @type {() => void} */
         this.markReady = () => undefined;
         this.ready = new Promise(resolve => (this.markReady = () => resolve(undefined)));
@@ -134,6 +137,7 @@ class Webradio extends utils.Adapter {
     async start() {
         await this.setState('info.connection', { val: false, ack: true });
         this.catalog = new RadioBrowser({ userAgent: this.userAgent, server: String(this.config.catalogServer || '') });
+        this.covers = this.config.trackCovers !== false ? new CoverFinder({ userAgent: this.userAgent }) : null;
         const ffmpegPath = String(this.config.ffmpegPath || '').trim() || String(require('ffmpeg-static') || '');
         this.ffmpegPath = ffmpegPath;
 
@@ -870,6 +874,9 @@ class Webradio extends utils.Adapter {
         r.title = title;
         await this.setState(`targets.${r.t.id}.title`, { val: title, ack: true });
         await this.writeTarget(r.t.titleState, fitTitle(title || r.station?.name || '', r.t.titleBytes), true);
+        if (this.covers) {
+            void this.updateCover(r, title);
+        }
         if (title) {
             const id = `targets.${r.t.id}.history`;
             const entry = { ts: Date.now(), station: r.station?.name || '', title };
@@ -877,6 +884,24 @@ class Webradio extends utils.Adapter {
             if (after[0] === entry) {
                 await this.setState(id, { val: JSON.stringify(after), ack: true });
             }
+        }
+    }
+
+    /**
+     * The cover of the song that plays, else the logo of the station.
+     *
+     * @param {Running} r - Target
+     * @param {string} title - ICY title the cover is for
+     */
+    async updateCover(r, title) {
+        const found = (await this.covers?.find(title)) || '';
+        if (!r.playing || r.title !== title || !r.station) {
+            return; // the title or the station changed meanwhile
+        }
+        const cover = found || this.coverOf(r.station);
+        const id = `targets.${r.t.id}.cover`;
+        if ((await this.getStateAsync(id))?.val !== cover) {
+            await this.setState(id, { val: cover, ack: true });
         }
     }
 

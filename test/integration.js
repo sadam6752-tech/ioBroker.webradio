@@ -126,6 +126,8 @@ tests.integration(path.join(__dirname, '..'), {
                         urlHost: '127.0.0.1',
                         readTitles: true,
                         cacheLogos: true,
+                        // no lookups at Apple from the tests
+                        trackCovers: false,
                     },
                 });
                 // the logo folder of version 0.0.1: an own mount point with a cached file

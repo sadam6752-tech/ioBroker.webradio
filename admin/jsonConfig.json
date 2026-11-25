@@ -371,6 +371,16 @@
                     "lg": 12,
                     "xl": 12
                 },
+                "trackCovers": {
+                    "type": "checkbox",
+                    "label": "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
                 "catalogServer": {
                     "type": "text",
                     "label": "Server of radio-browser.info",

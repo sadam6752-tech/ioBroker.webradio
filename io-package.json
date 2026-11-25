@@ -119,6 +119,7 @@
         "urlHost": "",
         "readTitles": true,
         "cacheLogos": true,
+        "trackCovers": true,
         "catalogServer": "",
         "ffmpegPath": ""
     },

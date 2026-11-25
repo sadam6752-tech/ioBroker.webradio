@@ -41,5 +41,6 @@
     "Export the favourites into the field": "Esporta le preferite nel campo",
     "Add the stations of the field to the table": "Aggiungi le stazioni del campo alla tabella",
     "M3U, PLS, JSON or one URL per line": "M3U, PLS, JSON o un URL per riga",
-    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Incolla una playlist e aggiungi le sue stazioni, oppure esporta la tabella e copia il testo. Le stazioni con un URL già presente nella tabella vengono saltate. Salva le impostazioni per mantenere la modifica."
+    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "Incolla una playlist e aggiungi le sue stazioni, oppure esporta la tabella e copia il testo. Le stazioni con un URL già presente nella tabella vengono saltate. Salva le impostazioni per mantenere la modifica.",
+    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "Mostra la copertina del brano in riproduzione (cercata nella iTunes Search API: artista e titolo vanno ad Apple)"
 }

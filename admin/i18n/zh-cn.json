@@ -41,5 +41,6 @@
     "Export the favourites into the field": "将收藏导出到文本框",
     "Add the stations of the field to the table": "将文本框中的电台添加到表格",
     "M3U, PLS, JSON or one URL per line": "M3U、PLS、JSON 或每行一个 URL",
-    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "粘贴播放列表并添加其中的电台，或导出表格并复制文本。表格中已有相同 URL 的电台会被跳过。保存设置以保留更改。"
+    "Paste a playlist and add its stations, or export the table and copy the text. Stations with a URL that is in the table already are skipped. Save the settings to keep the change.": "粘贴播放列表并添加其中的电台，或导出表格并复制文本。表格中已有相同 URL 的电台会被跳过。保存设置以保留更改。",
+    "Show the cover of the playing song (looked up in the iTunes Search API: artist and title go to Apple)": "显示正在播放歌曲的封面（在 iTunes Search API 中查找：艺术家和标题会发送给 Apple）"
 }
