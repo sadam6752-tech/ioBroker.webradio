@@ -178,6 +178,12 @@ Nothing else is sent.
     ### **WORK IN PROGRESS**
 -->
 
+### 0.0.6 (2026-11-27)
+
+- More robust: failures of background tasks are logged instead of becoming unhandled rejections, the daily
+  station check keeps running after an error, the playback and volume states of a player count only when the
+  player confirms them (ack), objects with custom settings are never deleted, also not by a migration
+
 ### 0.0.5 (2026-11-26)
 
 - A favourite written straight into a player (by an agent, a script) is taken over and shows in webradio; any
@@ -207,14 +213,7 @@ Nothing else is sent.
 - Resume the last station, next and previous favourite: buttons, messages and the vis widget
 - Sleep timer per player with a fade-out of the volume: state, message and the vis widget
 
-### 0.0.1 (2026-11-25)
-
-- First version: favourite stations with cached logos, search in radio-browser.info, players found automatically
-  (ioBroker.assistant, satellite-display, Dune HD) or any media.url state
-- Stream proxy with ffmpeg (FLAC/MP3 for ESPHome players) and ICY titles; playlists (m3u, pls, asx, xspf), HLS and
-  redirects; the stream server takes the next free port when the configured one is in use
-- vis widget "Radio" (vis 1): station tiles, player choice, stop, volume and now playing
-- Help for AI agents (pi-agent): list, search, play, stop and now playing by message
+Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 
 ## License
 

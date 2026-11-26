@@ -1,8 +1,21 @@
 {
     "common": {
         "name": "webradio",
-        "version": "0.0.5",
+        "version": "0.0.6",
         "news": {
+            "0.0.6": {
+                "en": "More robust: failures of background tasks are logged instead of crashing, the daily station check keeps running after an error, the playback and volume of a player count only when the player confirms them, objects with custom settings are never deleted",
+                "de": "Robuster: Fehler von Hintergrundaufgaben werden protokolliert statt abzustürzen, die tägliche Senderprüfung läuft nach einem Fehler weiter, Wiedergabe und Lautstärke eines Players zählen nur, wenn der Player sie bestätigt, Objekte mit Custom-Einstellungen werden nie gelöscht",
+                "ru": "Надёжнее: ошибки фоновых задач пишутся в лог вместо падения, ежедневная проверка станций продолжается после ошибки, воспроизведение и громкость плеера учитываются только после его подтверждения, объекты с пользовательскими настройками никогда не удаляются",
+                "pt": "Mais robusto: falhas de tarefas em segundo plano são registadas em vez de causar falhas, a verificação diária das estações continua após um erro, a reprodução e o volume de um leitor só contam quando o leitor os confirma, objetos com definições personalizadas nunca são apagados",
+                "nl": "Robuuster: fouten van achtergrondtaken worden gelogd in plaats van te crashen, de dagelijkse zendercontrole blijft na een fout doorlopen, afspelen en volume van een speler tellen alleen als de speler ze bevestigt, objecten met aangepaste instellingen worden nooit verwijderd",
+                "fr": "Plus robuste : les échecs des tâches d'arrière-plan sont journalisés au lieu de planter, la vérification quotidienne des stations continue après une erreur, la lecture et le volume d'un lecteur ne comptent que lorsque le lecteur les confirme, les objets avec des réglages personnalisés ne sont jamais supprimés",
+                "it": "Più robusto: gli errori delle attività in background vengono registrati invece di bloccare l'adattatore, il controllo giornaliero delle stazioni continua dopo un errore, riproduzione e volume di un lettore contano solo quando il lettore li conferma, gli oggetti con impostazioni personalizzate non vengono mai eliminati",
+                "es": "Más robusto: los fallos de las tareas en segundo plano se registran en lugar de bloquear el adaptador, la comprobación diaria de las emisoras sigue tras un error, la reproducción y el volumen de un reproductor solo cuentan cuando el reproductor los confirma, los objetos con ajustes personalizados nunca se eliminan",
+                "pl": "Stabilniej: błędy zadań w tle są zapisywane w logu zamiast powodować awarię, codzienne sprawdzanie stacji działa dalej po błędzie, odtwarzanie i głośność odtwarzacza liczą się dopiero po jego potwierdzeniu, obiekty z ustawieniami niestandardowymi nigdy nie są usuwane",
+                "uk": "Надійніше: помилки фонових завдань пишуться в лог замість падіння, щоденна перевірка станцій триває після помилки, відтворення та гучність плеєра враховуються лише після його підтвердження, об'єкти з користувацькими налаштуваннями ніколи не видаляються",
+                "zh-cn": "更稳健：后台任务的失败会记录到日志而不会导致崩溃，每日电台检查在出错后继续运行，播放器的播放状态和音量只有在播放器确认后才生效，带有自定义设置的对象永远不会被删除"
+            },
             "0.0.5": {
                 "en": "A favourite written straight into a player (by an AI agent or a script) is taken over and shows in webradio; any other URL shows as external; the other players of the same device are watched too",
                 "de": "Ein Lieblingssender, der direkt in ein Abspielgerät geschrieben wird (von einem KI-Agenten oder Skript), wird übernommen und in webradio angezeigt; jede andere URL erscheint als extern; die anderen Player desselben Geräts werden mit überwacht",
@@ -95,9 +108,7 @@
             "uk": "Інтернет-радіо для плеєрів ioBroker: зберігайте улюблені станції, знаходьте нові в radio-browser.info і вмикайте їх на сателітах ioBroker.assistant, панелях satellite-display, Dune HD або будь-якому плеєрі, що відтворює URL",
             "zh-cn": "面向 ioBroker 播放器的网络电台：保存收藏的电台，在 radio-browser.info 中查找新电台，并在 ioBroker.assistant 卫星、satellite-display 面板、Dune HD 或任何可播放 URL 的播放器上播放"
         },
-        "authors": [
-            "sadam6752-tech <sadam6752@gmail.com>"
-        ],
+        "authors": ["sadam6752-tech <sadam6752@gmail.com>"],
         "keywords": [
             "webradio",
             "internet radio",
@@ -140,10 +151,7 @@
             }
         ],
         "messagebox": true,
-        "restartAdapters": [
-            "vis",
-            "vis-2"
-        ],
+        "restartAdapters": ["vis", "vis-2"],
         "supportedMessages": {
             "deviceManager": true,
             "help": true

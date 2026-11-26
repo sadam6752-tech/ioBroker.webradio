@@ -129,7 +129,7 @@ class Webradio extends utils.Adapter {
         this.markReady = () => undefined;
         this.ready = new Promise(resolve => (this.markReady = () => resolve(undefined)));
         this.on('ready', this.onReady.bind(this));
-        this.on('stateChange', this.onStateChange.bind(this));
+        this.on('stateChange', (id, state) => this.background(this.onStateChange(id, state)));
         this.on('message', this.onMessage.bind(this));
         // the players in the Device Manager (tab Devices); it answers the dm:* messages itself
         this.deviceManagement = new RadioDeviceManagement(this);
@@ -238,9 +238,10 @@ class Webradio extends utils.Adapter {
                 // the callbacks run later, when r exists
                 sleep: new SleepTimer({
                     timers: this.timers,
-                    onLeft: minutes => void this.setState(`targets.${t.id}.sleepLeft`, { val: minutes, ack: true }),
-                    onFade: fraction => void this.fadeStep(r, fraction),
-                    onEnd: () => void this.sleepEnd(r),
+                    onLeft: minutes =>
+                        this.background(this.setState(`targets.${t.id}.sleepLeft`, { val: minutes, ack: true })),
+                    onFade: fraction => this.background(this.fadeStep(r, fraction)),
+                    onEnd: () => this.background(this.sleepEnd(r)),
                 }),
                 fadeFrom: null,
                 ramp: new Ramp(this.timers),
@@ -265,8 +266,8 @@ class Webradio extends utils.Adapter {
                     userAgent: this.userAgent,
                     timers: this.timers,
                     log: this.log,
-                    onTitle: title => void this.onTitle(r, title),
-                    onEnd: () => void this.onStationEnd(r),
+                    onTitle: title => this.background(this.onTitle(r, title)),
+                    onEnd: () => this.background(this.onStationEnd(r)),
                 });
                 http.add(r.channel);
             }
@@ -318,7 +319,7 @@ class Webradio extends utils.Adapter {
         for (const r of this.running.values()) {
             await this.scheduleAlarm(r);
         }
-        void this.cacheLogos(this.stations);
+        this.background(this.cacheLogos(this.stations));
         if (this.config.checkStations !== false) {
             this.scheduleCheck(FIRST_CHECK_DELAY_MS);
         }
@@ -535,7 +536,8 @@ class Webradio extends utils.Adapter {
         // 0.0.3-beta: volume and fade-in of the wake-up radio were per player; they are settings of the instance now
         for (const t of targets) {
             for (const key of ['alarmVolume', 'alarmFade']) {
-                if (await this.getObjectAsync(`targets.${t.id}.${key}`)) {
+                const old = await this.getObjectAsync(`targets.${t.id}.${key}`);
+                if (old && !Object.keys(old.common?.custom || {}).length) {
                     await this.delObjectAsync(`targets.${t.id}.${key}`);
                 }
             }
@@ -762,12 +764,12 @@ class Webradio extends utils.Adapter {
                 userAgent: this.userAgent,
                 timers: this.timers,
                 log: this.log,
-                onTitle: title => void this.onTitle(r, title),
+                onTitle: title => this.background(this.onTitle(r, title)),
             });
             r.watcher.start();
         }
         if (station.uuid) {
-            void this.catalog.click(station.uuid);
+            this.background(this.catalog.click(station.uuid));
         }
         return '';
     }
@@ -885,7 +887,7 @@ class Webradio extends utils.Adapter {
                 userAgent: this.userAgent,
                 timers: this.timers,
                 log: this.log,
-                onTitle: title => void this.onTitle(r, title),
+                onTitle: title => this.background(this.onTitle(r, title)),
             });
             r.watcher.start();
         }
@@ -1043,7 +1045,7 @@ class Webradio extends utils.Adapter {
         await this.setState(`targets.${r.t.id}.title`, { val: title, ack: true });
         await this.writeTarget(r.t.titleState, fitTitle(title || r.station?.name || '', r.t.titleBytes), true);
         if (this.covers) {
-            void this.updateCover(r, title);
+            this.background(this.updateCover(r, title));
         }
         if (title) {
             const id = `targets.${r.t.id}.history`;
@@ -1161,7 +1163,7 @@ class Webradio extends utils.Adapter {
         r.alarmTimer = this.setTimeout(
             () => {
                 r.alarmTimer = null;
-                void this.wakeUp(r).finally(() => this.scheduleAlarm(r));
+                this.background(this.wakeUp(r)).finally(() => this.scheduleAlarm(r));
             },
             Math.max(1000, next.getTime() - Date.now()),
         );
@@ -1196,8 +1198,8 @@ class Webradio extends utils.Adapter {
                 0,
                 volume,
                 fade * 60_000,
-                level => void this.setVolume(r, level),
-                () => void this.setState(`${base}.volume`, { val: volume, ack: true }),
+                level => this.background(this.setVolume(r, level)),
+                () => this.background(this.setState(`${base}.volume`, { val: volume, ack: true })),
             );
         } else if (r.t.volumeState) {
             await this.setState(`${base}.volume`, { val: volume, ack: true });
@@ -1212,7 +1214,7 @@ class Webradio extends utils.Adapter {
             if (!this.http) {
                 return;
             }
-            await this.checkStations();
+            await this.background(this.checkStations());
             this.scheduleCheck(CHECK_INTERVAL_HOURS * 3600_000);
         }, ms);
     }
@@ -1379,7 +1381,7 @@ class Webradio extends utils.Adapter {
             return;
         }
         const byState = this.byPlayerState.get(id);
-        if (byState) {
+        if (byState && state.ack) {
             // stopped on the player itself (its button, its own UI): the URL stays, only the playback state says it
             const playback = playbackOf(state.val);
             if (byState.playing && playback === 'playing') {
@@ -1391,8 +1393,8 @@ class Webradio extends utils.Adapter {
             return;
         }
         const byVolume = this.byVolumeState.get(id);
-        if (byVolume) {
-            // the volume changed on the player or by hand: the fade-in of the wake-up radio ends
+        if (byVolume && state.ack) {
+            // the player reports a volume (changed on it or by hand): the fade-in of the wake-up radio ends
             if (byVolume.ramp.active && !ownVolume(byVolume.wroteVolume, state.val, byVolume.volumeCommon)) {
                 this.log.info(`${byVolume.t.name}: volume changed by hand, the fade-in ends`);
                 byVolume.ramp.cancel();
@@ -1405,7 +1407,7 @@ class Webradio extends utils.Adapter {
             return;
         }
         if (!state.ack && id === `${this.namespace}.info.checkStations` && state.val) {
-            void this.checkStations();
+            this.background(this.checkStations());
             return;
         }
         if (state.ack || !id.startsWith(`${this.namespace}.targets.`)) {
@@ -1938,6 +1940,21 @@ class Webradio extends utils.Adapter {
         }
         const row = { enabled: true, name: s.name, url: s.url, logo: s.favicon, tags: s.tags.join(', '), uuid: s.uuid };
         return { native: { stations: [...rows, row] } };
+    }
+
+    /**
+     * Runs an async task without waiting for it: a failure (e.g. a state write while the adapter stops) is logged
+     * instead of becoming an unhandled rejection.
+     *
+     * @template T
+     * @param {Promise<T>} task - Running task
+     * @returns {Promise<T | undefined>} The task, failures caught
+     */
+    background(task) {
+        return task.catch(e => {
+            this.log.warn(`background task failed: ${e?.message || e}`);
+            return undefined;
+        });
     }
 
     /**

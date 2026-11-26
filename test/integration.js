@@ -466,8 +466,8 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.ok(Number(await state(VOLUME)) < 0.2, 'starts low');
                 // it rises in steps of 5 s …
                 await waitFor(VOLUME, v => typeof v === 'number' && v >= 0.1 && v < 0.6, 15_000);
-                // … until the volume is changed by hand: the fade-in ends there
-                await harness.states.setStateAsync(VOLUME, { val: 0.95, ack: false });
+                // … until the volume is changed by hand (the player reports it, ack): the fade-in ends there
+                await harness.states.setStateAsync(VOLUME, { val: 0.95, ack: true });
                 await new Promise(r => setTimeout(r, 7000));
                 assert.equal(await state(VOLUME), 0.95, 'no further step after the change by hand');
                 const after = Date.parse(String(await state('webradio.0.targets.kitchen.alarmNext')));
