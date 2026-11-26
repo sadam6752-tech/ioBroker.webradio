@@ -178,7 +178,7 @@ Nothing else is sent.
     ### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
+### 0.0.5 (2026-11-26)
 
 - A favourite written straight into a player (by an agent, a script) is taken over and shows in webradio; any
   other URL shows in `external`; the other players of the same device are watched too; the help tells agents to use

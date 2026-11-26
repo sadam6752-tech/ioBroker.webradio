@@ -1,8 +1,21 @@
 {
     "common": {
         "name": "webradio",
-        "version": "0.0.4",
+        "version": "0.0.5",
         "news": {
+            "0.0.5": {
+                "en": "A favourite written straight into a player (by an AI agent or a script) is taken over and shows in webradio; any other URL shows as external; the other players of the same device are watched too",
+                "de": "Ein Lieblingssender, der direkt in ein Abspielgerät geschrieben wird (von einem KI-Agenten oder Skript), wird übernommen und in webradio angezeigt; jede andere URL erscheint als extern; die anderen Player desselben Geräts werden mit überwacht",
+                "ru": "Станция из избранного, записанная прямо в плеер (ИИ-агентом или скриптом), подхватывается и видна в webradio; любой другой URL показывается как внешний; другие плееры того же устройства тоже отслеживаются",
+                "pt": "Uma estação favorita escrita diretamente num leitor (por um agente de IA ou um script) é assumida e aparece no webradio; qualquer outro URL aparece como externo; os outros leitores do mesmo dispositivo também são observados",
+                "nl": "Een favoriete zender die direct in een speler wordt geschreven (door een AI-agent of script) wordt overgenomen en verschijnt in webradio; elke andere URL verschijnt als extern; de andere spelers van hetzelfde apparaat worden ook gevolgd",
+                "fr": "Une station favorite écrite directement dans un lecteur (par un agent IA ou un script) est reprise et apparaît dans webradio ; toute autre URL apparaît comme externe ; les autres lecteurs du même appareil sont aussi surveillés",
+                "it": "Una stazione preferita scritta direttamente in un lettore (da un agente IA o da uno script) viene ripresa e appare in webradio; ogni altro URL appare come esterno; anche gli altri lettori dello stesso dispositivo vengono osservati",
+                "es": "Una emisora favorita escrita directamente en un reproductor (por un agente de IA o un script) se asume y aparece en webradio; cualquier otra URL aparece como externa; también se vigilan los demás reproductores del mismo dispositivo",
+                "pl": "Ulubiona stacja wpisana bezpośrednio do odtwarzacza (przez agenta AI lub skrypt) jest przejmowana i widoczna w webradio; każdy inny URL jest pokazywany jako zewnętrzny; obserwowane są też inne odtwarzacze tego samego urządzenia",
+                "uk": "Станція з улюблених, записана прямо в плеєр (ШІ-агентом або скриптом), підхоплюється й видна у webradio; будь-який інший URL показується як зовнішній; інші плеєри того самого пристрою теж відстежуються",
+                "zh-cn": "直接写入播放器的收藏电台（由 AI 代理或脚本写入）会被接管并显示在 webradio 中；其他 URL 显示为外部来源；同一设备的其他播放器也会被监视"
+            },
             "0.0.4": {
                 "en": "Set the wake-up radio without scripts: a form in the Device Manager card and an alarm panel in the vis widget",
                 "de": "Radiowecker ohne Skripte stellen: ein Formular in der Karte des Device Managers und ein Weckerfeld im vis-Widget",
