@@ -572,6 +572,31 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.equal(await state(`${SAT}.controls.player.url`), url, 'nothing written to the player');
             });
 
+            it('takes over a favourite started past the adapter, and shows any other URL as external', async function () {
+                this.timeout(60_000);
+                const URL_STATE = `${SAT}.controls.player.url`;
+                await send('stop', {});
+                // an agent or a script writes the URL of a favourite straight into the player
+                await harness.states.setStateAsync(URL_STATE, { val: `${radio.base}/station`, ack: false });
+                await waitFor('webradio.0.targets.kitchen.playing', v => v === true);
+                assert.equal(await state('webradio.0.targets.kitchen.station'), 'test_radio');
+                assert.equal(await state('webradio.0.targets.kitchen.streamUrl'), `${radio.base}/station`);
+                assert.equal(await state('webradio.0.targets.kitchen.external'), '');
+                await waitFor('webradio.0.targets.kitchen.title', v => v === 'Test Artist - Test Song');
+                const now = await send('now_playing', { target: 'kitchen' });
+                assert.equal(now.targets[0].station, 'Test Radio');
+                // the stop of the adapter stops that player too
+                await send('stop', { target: 'kitchen' });
+                await waitFor(URL_STATE, v => v === 'stop');
+                assert.equal(await state('webradio.0.targets.kitchen.playing'), false);
+                // a URL that is no favourite: only shown
+                await harness.states.setStateAsync(URL_STATE, { val: 'https://other.example/stream.mp3', ack: false });
+                await waitFor('webradio.0.targets.kitchen.external', v => v === 'https://other.example/stream.mp3');
+                assert.equal(await state('webradio.0.targets.kitchen.playing'), false);
+                await harness.states.setStateAsync(URL_STATE, { val: 'stop', ack: false });
+                await waitFor('webradio.0.targets.kitchen.external', v => v === '');
+            });
+
             it('multiroom: one station on two satellites, one connection to the station', async function () {
                 this.timeout(90_000);
                 const before = radio.requests.filter(r => r.startsWith('/station ioBroker.webradio')).length;

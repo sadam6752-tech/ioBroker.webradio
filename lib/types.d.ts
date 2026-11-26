@@ -57,6 +57,8 @@ export interface Target {
     device: string;
     /** Found automatically (not a row of the settings) */
     discovered: boolean;
+    /** URL states of other players of the same device (an assistant satellite that is also a panel) */
+    aliases: string[];
 }
 
 /** The used resources calls of js-controller 8 (not in the typings of 7) */

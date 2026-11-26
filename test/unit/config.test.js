@@ -101,10 +101,20 @@ describe('players', () => {
             'dune-hd-remote.0.media.playUrl': state('media.url'),
         };
         assert.deepEqual(discoverTargets(objects), [
-            { name: 'Gast', urlState: 'assistant.0.satellites.Gast.controls.player.url' },
-            { name: 'Mini', urlState: 'satellite-display.0.satellites.mini.media.url' },
-            { name: 'panel-mobil', urlState: 'satellite-display.0.satellites.panel-mobil.media.url' },
+            { name: 'Gast', urlState: 'assistant.0.satellites.Gast.controls.player.url', aliases: [] },
+            {
+                name: 'Mini',
+                urlState: 'satellite-display.0.satellites.mini.media.url',
+                // the voice satellite of the same device: played through by an agent, watched too
+                aliases: ['assistant.0.satellites.Mini.controls.media_player.url'],
+            },
+            { name: 'panel-mobil', urlState: 'satellite-display.0.satellites.panel-mobil.media.url', aliases: [] },
         ]);
+        const row = buildTargets(
+            [{ enabled: true, name: 'Mini', urlState: 'satellite-display.0.satellites.mini.media.url' }],
+            discoverTargets(objects),
+        ).targets[0];
+        assert.deepEqual(row.aliases, ['assistant.0.satellites.Mini.controls.media_player.url'], 'a row gets them too');
     });
 
     it('takes the rows first, then the found players; a row changes or hides a found player', () => {

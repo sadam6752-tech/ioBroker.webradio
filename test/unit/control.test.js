@@ -10,6 +10,7 @@ const {
     percentOf,
     playbackOf,
     ownVolume,
+    sameStream,
     addHistory,
     readHistory,
     SleepTimer,
@@ -96,6 +97,15 @@ describe('player control', () => {
         for (const v of ['announcing', '', null, 'buffering']) {
             assert.equal(playbackOf(v), 'other', String(v));
         }
+    });
+
+    it('knows the same stream behind small differences of the URL', () => {
+        assert.equal(sameStream('https://Radio.Example/live/', 'https://radio.example/live'), true);
+        assert.equal(sameStream('http://a/x?s=1', 'http://a/x?s=1'), true);
+        assert.equal(sameStream('http://a/x?s=1', 'http://a/x?s=2'), false);
+        assert.equal(sameStream('http://a/x', 'https://a/x'), false, 'another protocol');
+        assert.equal(sameStream('', ''), false, 'nothing is no stream');
+        assert.equal(sameStream(undefined, 'http://a/'), false);
     });
 
     it('tells its own volume (an echo) from one set by hand', () => {

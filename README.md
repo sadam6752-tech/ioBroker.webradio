@@ -54,6 +54,8 @@ the station is sent: _Automatic_ (proxy for ESPHome players, the station URL for
 _Proxy FLAC_ or _Proxy MP3_. A row with the play URL state of a found player changes that player, a switched-off row
 hides it.
 
+A station that something else (an AI agent, a script, another adapter) writes straight into a player — also into the voice satellite of a device that webradio plays through as a panel — is noticed: the URL of a favourite is taken over (station, titles, cover, history, sleep timer and stop work as usual), any other URL is shown in `targets.<player>.external`. Agents should still use the messages of the adapter; the help tells them so.
+
 A stop on the player itself (its button or its own UI) is noticed through its playback state (the state with role `media.state` next to the URL state, as ioBroker.assistant and satellite-display have it): the adapter stops too, with the sleep timer and the fade-in of the wake-up radio. Changing the volume on the player during the fade-in ends the fade-in.
 
 A player whose objects were deleted (a removed satellite) is skipped with one warning in the log; nothing is written
@@ -91,6 +93,7 @@ millisecond: each one buffers on its own.
 | `webradio.0.targets.<player>.sleep`                               | sleep timer in minutes, 0 = off; the volume fades out in the last 30 s                    |
 | `webradio.0.targets.<player>.sleepLeft`                           | minutes left of the sleep timer                                                           |
 | `webradio.0.targets.<player>.lastStation`                         | the station that played last (JSON), for resume                                           |
+| `webradio.0.targets.<player>.external`                            | URL that plays from another source (not a favourite), empty = none                        |
 | `webradio.0.targets.<player>.history`                             | the last 50 titles (JSON, newest first)                                                   |
 | `webradio.0.targets.<player>.alarmTime` / `.alarmDays`            | wake-up radio: time `HH:MM` (empty = off), weekdays `1-5`, `mo,we,fr` (empty = every day) |
 | `webradio.0.targets.<player>.alarmStation`                        | its station (empty = the last one)                                                        |
@@ -174,6 +177,12 @@ Nothing else is sent.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- A favourite written straight into a player (by an agent, a script) is taken over and shows in webradio; any
+  other URL shows in `external`; the other players of the same device are watched too; the help tells agents to use
+  the messages
 
 ### 0.0.4 (2026-11-26)
 

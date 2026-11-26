@@ -23,6 +23,7 @@ const {
     percentOf,
     playbackOf,
     ownVolume,
+    sameStream,
     addHistory,
     readHistory,
     SleepTimer,
@@ -69,6 +70,8 @@ const {
  * @property {string} stateId - Playback state of the player (role media.state), '' = none
  * @property {boolean} seenPlaying - The player reported playing since this adapter started the station
  * @property {number[]} wroteVolume - The last values this adapter wrote to the volume state of the player
+ * @property {string} takenFrom - URL state through which a favourite was played by someone else and taken over,
+ *   '' = this adapter started it
  */
 
 /** Port of the stream server, next to airplay-receiver (8095) */
@@ -245,6 +248,7 @@ class Webradio extends utils.Adapter {
                 stateId: '',
                 seenPlaying: false,
                 wroteVolume: [],
+                takenFrom: '',
             };
             if (!way.direct) {
                 if (!ffmpegPath) {
@@ -271,6 +275,15 @@ class Webradio extends utils.Adapter {
             r.stateId = await this.playerStateOf(t);
             if (r.stateId) {
                 this.byPlayerState.set(r.stateId, r);
+            }
+            // the other players of the same device (an assistant satellite that is also a panel): what is played
+            // through them shows here too
+            for (const alias of t.aliases) {
+                this.byUrlState.set(alias, r);
+                const aliasState = await this.playerStateOf({ ...t, urlState: alias });
+                if (aliasState) {
+                    this.byPlayerState.set(aliasState, r);
+                }
             }
             if (t.volumeState) {
                 this.byVolumeState.set(t.volumeState, r);
@@ -470,6 +483,7 @@ class Webradio extends utils.Adapter {
             ['sleep', 'number', 'level.timer', true, 0, { min: 0, max: 720, unit: 'min' }],
             ['sleepLeft', 'number', 'value', false, 0, { min: 0, unit: 'min' }],
             ['lastStation', 'string', 'json', false, '', {}],
+            ['external', 'string', 'text.url', false, '', {}],
             ['history', 'string', 'json', false, '[]', {}],
             ['alarmTime', 'string', 'text', true, '', {}],
             ['alarmDays', 'string', 'text', true, '', {}],
@@ -500,7 +514,7 @@ class Webradio extends utils.Adapter {
             }
             // nothing plays after a start and no sleep timer runs; the selected station, the volume and the last
             // station stay
-            for (const key of ['playing', 'title', 'cover', 'streamUrl', 'sleep', 'sleepLeft']) {
+            for (const key of ['playing', 'title', 'cover', 'streamUrl', 'sleep', 'sleepLeft', 'external']) {
                 const def = states.find(s => s[0] === key)?.[4];
                 await this.setState(`targets.${t.id}.${key}`, { val: def ?? '', ack: true });
             }
@@ -712,6 +726,7 @@ class Webradio extends utils.Adapter {
         await this.cancelSleep(r);
         r.ramp.cancel();
         r.seenPlaying = false;
+        r.takenFrom = '';
         this.stopReaders(r);
         r.station = station;
         r.title = '';
@@ -731,6 +746,7 @@ class Webradio extends utils.Adapter {
         const base = `targets.${r.t.id}`;
         await this.setState(`${base}.station`, { val: station.id, ack: true });
         await this.setState(`${base}.lastStation`, { val: JSON.stringify(rememberStation(station)), ack: true });
+        await this.setState(`${base}.external`, { val: '', ack: true });
         await this.setState(`${base}.streamUrl`, { val: url, ack: true });
         await this.setState(`${base}.cover`, { val: this.coverOf(station), ack: true });
         await this.setState(`${base}.title`, { val: '', ack: true });
@@ -800,9 +816,79 @@ class Webradio extends utils.Adapter {
             this.log.info(`${r.t.name}: stopped`);
             await this.writeTarget(r.t.stopState, r.t.stopValue);
             await this.writeTarget(r.t.titleState, '', true);
+            if (r.takenFrom && r.takenFrom !== r.t.urlState && r.takenFrom.startsWith('assistant.')) {
+                // started through the voice satellite of the device: "stop" stops its player
+                await this.writeTarget(r.takenFrom, 'stop');
+            }
         }
+        r.takenFrom = '';
         r.ramp.cancel();
         await this.cancelSleep(r);
+    }
+
+    /**
+     * A URL state of a player changed (its own, or one of another player of the same device). The URL this adapter
+     * wrote is its own; anything else plays from another source: a favourite is taken over (station, titles, cover,
+     * history, stop), another URL only shows in targets.<player>.external.
+     *
+     * @param {Running} r - Target
+     * @param {string} id - URL state that changed
+     * @param {ioBroker.StateValue} val - New value
+     */
+    async onPlayerUrl(r, id, val) {
+        const url = String(val ?? '').trim();
+        const mine = r.playing && (r.takenFrom ? id === r.takenFrom && sameStream(url, r.url) : url === r.url);
+        if (mine) {
+            return;
+        }
+        if (r.playing && (id === r.t.urlState || id === r.takenFrom)) {
+            // the player was given another URL (by its own UI, another adapter) or stopped: this station is over
+            this.log.debug(`${r.t.name}: the player plays something else now`);
+            await this.stopTarget(r, false);
+        }
+        const base = `targets.${r.t.id}`;
+        const stream = /^https?:\/\//i.test(url) && !url.includes(`:${this.httpPort}/play/`);
+        if (!stream) {
+            await this.setState(`${base}.external`, { val: '', ack: true });
+            return;
+        }
+        const station = this.stations.find(s => sameStream(s.url, url) || sameStream(this.configUrls.get(s.id), url));
+        if (!station) {
+            await this.setState(`${base}.external`, { val: url, ack: true });
+            this.log.debug(`${r.t.name}: plays ${url} from another source`);
+            return;
+        }
+        if (r.playing) {
+            await this.stopTarget(r, false);
+        }
+        await this.cancelSleep(r);
+        r.ramp.cancel();
+        this.stopReaders(r);
+        r.station = station;
+        r.title = '';
+        r.url = url;
+        r.playing = true;
+        r.takenFrom = id;
+        r.seenPlaying = false;
+        this.log.info(`${r.t.name}: plays ${station.name}, started elsewhere — taken over`);
+        await this.setState(`${base}.external`, { val: '', ack: true });
+        await this.setState(`${base}.station`, { val: station.id, ack: true });
+        await this.setState(`${base}.lastStation`, { val: JSON.stringify(rememberStation(station)), ack: true });
+        await this.setState(`${base}.streamUrl`, { val: url, ack: true });
+        await this.setState(`${base}.cover`, { val: this.coverOf(station), ack: true });
+        await this.setState(`${base}.title`, { val: '', ack: true });
+        await this.setState(`${base}.playing`, { val: true, ack: true });
+        if (this.config.readTitles !== false) {
+            r.watcher = new SourceReader({
+                url,
+                name: `${r.t.name} (titles)`,
+                userAgent: this.userAgent,
+                timers: this.timers,
+                log: this.log,
+                onTitle: title => void this.onTitle(r, title),
+            });
+            r.watcher.start();
+        }
     }
 
     /**
@@ -1315,11 +1401,7 @@ class Webradio extends utils.Adapter {
         }
         const foreign = this.byUrlState.get(id);
         if (foreign) {
-            // the player was given another URL (by its own UI, another adapter) or stopped: this station is over
-            if (foreign.playing && state.val !== foreign.url) {
-                this.log.debug(`${foreign.t.name}: the player plays something else now`);
-                await this.stopTarget(foreign, false);
-            }
+            await this.onPlayerUrl(foreign, id, state.val);
             return;
         }
         if (!state.ack && id === `${this.namespace}.info.checkStations` && state.val) {
