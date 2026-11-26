@@ -175,7 +175,7 @@ Nothing else is sent.
     ### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
+### 0.0.4 (2026-11-26)
 
 - Set the wake-up radio without scripts: a form in the Device Manager card and an alarm panel in the vis widget
 

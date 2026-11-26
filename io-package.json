@@ -1,8 +1,21 @@
 {
     "common": {
         "name": "webradio",
-        "version": "0.0.3",
+        "version": "0.0.4",
         "news": {
+            "0.0.4": {
+                "en": "Set the wake-up radio without scripts: a form in the Device Manager card and an alarm panel in the vis widget",
+                "de": "Radiowecker ohne Skripte stellen: ein Formular in der Karte des Device Managers und ein Weckerfeld im vis-Widget",
+                "ru": "Радиобудильник без скриптов: форма в карточке Device Manager и панель будильника в виджете vis",
+                "pt": "Definir o rádio despertador sem scripts: um formulário no cartão do Device Manager e um painel de alarme no widget vis",
+                "nl": "Wekkerradio instellen zonder scripts: een formulier in de kaart van de Device Manager en een wekkerpaneel in de vis-widget",
+                "fr": "Régler le radio-réveil sans scripts : un formulaire dans la carte du Device Manager et un panneau de réveil dans le widget vis",
+                "it": "Impostare la radiosveglia senza script: un modulo nella scheda del Device Manager e un pannello sveglia nel widget vis",
+                "es": "Configurar el radio despertador sin scripts: un formulario en la tarjeta del Device Manager y un panel de alarma en el widget de vis",
+                "pl": "Ustawianie radiobudzika bez skryptów: formularz w karcie Device Managera i panel budzika w widżecie vis",
+                "uk": "Радіобудильник без скриптів: форма в картці Device Manager і панель будильника у віджеті vis",
+                "zh-cn": "无需脚本即可设置收音机闹钟：Device Manager 卡片中的表单和 vis 小部件中的闹钟面板"
+            },
             "0.0.3": {
                 "en": "Cover of the playing song (iTunes), title history, daily check of the favourites, multiroom, wake-up radio with volume rise, Device Manager cards, import and export of the favourites; a stop on the player itself is noticed",
                 "de": "Cover des laufenden Titels (iTunes), Titelverlauf, tägliche Prüfung der Lieblingssender, Multiroom, Radiowecker mit ansteigender Lautstärke, Karten im Device Manager, Import und Export der Lieblingssender; ein Stopp am Abspielgerät selbst wird erkannt",
